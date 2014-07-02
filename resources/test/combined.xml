@@ -1,0 +1,562 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+
+
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- MODULE SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- MODULE: PROPERTIES -->
+
+	<bean id="moduleProperties" class="org.springframework.beans.factory.config.MapFactoryBean">
+		<property name="sourceMap">
+			<map>
+				<entry key="module.name" value="Control" />
+				<entry key="module.version" value="1.4" />
+				<entry key="module.author" value="James Stone" />
+				<entry key="module.description" value="Java implementation of the colour corsi task" />
+				<entry key="module.execution.display.classname" value="ch.tatool.core.display.swing.SwingExecutionDisplayProvider" />
+				<entry key="module.execution.initializer.classname" value="ch.tatool.core.module.initializer.SpringExecutorInitializer" />
+				<entry key="module.execution.display.regionsContainer" value="true" />
+				<entry key="module.scheduler.classname" value="ch.tatool.core.module.scheduler.AlwaysAllowModuleScheduler" />
+				<entry key="module.info.classname" value="ch.tatool.app.gui.ModuleInfoPanel" />
+			</map>
+		</property>
+	</bean>
+	
+	<!-- MODULE: EXPORTERS -->
+	<bean id="moduleExporters" class="org.springframework.beans.factory.config.MapFactoryBean">
+		<property name="sourceMap">
+			<map>
+				<entry key="localExporter">
+					<bean class="ch.tatool.app.export.FileDataExporter">
+						<property name="incrementalExport" value="false" />
+						<property name="autoExport" value="false" />
+					</bean>
+				</entry>
+				<entry key="serverExporter"> 
+					<bean class="ch.tatool.app.export.ServerDataExporter"> 
+						<property name="incrementalExport" value="true" /> 
+						<property name="autoExport" value="true" /> 
+						<property name="url" value="http://jamesmstone.co.uk/study_serve/data/upload.php" /> 
+					</bean> 
+				</entry>
+			</map>
+		</property>
+	</bean>
+	
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- GENERAL SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- KEYBOARD HANDLER -->
+	<bean id="keyHandler" class="ch.tatool.core.element.handler.EscapeKeyEventHandler">
+		<!-- allow to exit module by pressing ESCAPE -->
+		<property name="allowEscapeKey" value="true" />
+	</bean>
+
+	<!-- STATUS PANEL ON -->
+	<bean id="status_panel_on_control"
+		class="ch.tatool.core.display.swing.status.DefaultModuleStatusRegionConfigurator">
+		<property name="panels">
+			<list>
+				<util:constant
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_TIMER" />
+				<util:constant 
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_OUTCOME" />
+				<util:constant 
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_TRIAL" />
+				<util:constant 
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_LEVEL" />
+				<util:constant 
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_CUSTOM_ONE" />
+			</list>
+		</property>
+	</bean>
+
+	<!-- STATUS PANEL OFF -->
+	<bean id="status_panel_off"
+		class="ch.tatool.core.display.swing.status.DefaultModuleStatusRegionConfigurator">
+		<property name="panels">
+			<list>
+			</list>
+		</property>
+	</bean>
+	
+
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- ITERATOR SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- TASK ITERATORS -->
+	
+	<bean id="wordsearch_sessions" class="ch.tatool.core.element.SessionListSelector">
+		<property name="sessionList">
+			<list>
+				<value>1</value>
+				<value>3</value>
+				<value>5</value>
+				<value>7</value>
+				<value>9</value>
+				<value>11</value>
+				<value>13</value>
+				<value>15</value>
+				<value>17</value>
+				<value>19</value>
+				<value>21</value>
+				<value>23</value>
+				<value>25</value>
+				<value>27</value>
+				<value>29</value>
+				<value>31</value>
+				<value>33</value>
+				<value>35</value>
+				<value>37</value>
+				<value>39</value>
+				<value>41</value>
+				<value>43</value>
+				<value>45</value>
+				<value>47</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="jigsaw_sessions" class="ch.tatool.core.element.SessionListSelector">
+		<property name="sessionList">
+			<list>
+				<value>2</value>
+				<value>4</value>
+				<value>6</value>
+				<value>8</value>
+				<value>10</value>
+				<value>12</value>
+				<value>14</value>
+				<value>16</value>
+				<value>18</value>
+				<value>20</value>
+				<value>22</value>
+				<value>24</value>
+				<value>26</value>
+				<value>28</value>
+				<value>30</value>
+				<value>32</value>
+				<value>34</value>
+				<value>36</value>
+				<value>38</value>
+				<value>40</value>
+				<value>42</value>
+				<value>44</value>
+				<value>46</value>
+				<value>48</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="iter_ws" class="ch.tatool.core.element.TemporalListSelector">
+		<!-- number of iterations -->
+		<property name="numIterations" value="99" />
+		<property name="timeout" value="120000" />
+	</bean>
+	
+	<bean id="iter_jigsaw" class="ch.tatool.core.element.TemporalListSelector">
+		<property name="timeout" value="120000" /> <!-- time limit -->
+		<property name="numIterations" value="99" />
+	</bean>
+	
+	<bean id="stacker_timer" class="ch.tatool.core.element.TimerListSelector">
+		<property name="timeout" value="60000" />
+		<property name="numIterations" value="3" />
+	</bean>
+
+	
+	<!-- Start of trial pause (get ready) -->
+	<!-- displays a 'get ready' message for given duration prior to start of each trial -->
+	<bean id="get-ready" class="ch.tatool.core.executable.HTMLExecutable">
+		<property name="base" value="/instructions/" />
+		<property name="pages">
+			<list>
+				<value>getReady.html</value>
+			</list>
+		</property>
+		<property name="duration" value="1000" />
+	</bean>
+	
+	
+	<bean id="wordsearch" class="stone.javatasks.control.executables.WordsearchTrial">
+		<property name="StartingSizeOfGrid" value="6" /> <!-- this number + 1 is the N in the NxN grid created to accomodate the wordsearch.-->
+		<property name="TimerLimit" value="60" /> <!-- in seconds -->
+	</bean>
+	
+	<bean id="jigsaw" class="stone.javatasks.control.executables.JigsawTrial">
+		<property name="StartingNumOfDimensions" value="2" /> <!-- the minimum NxN number of pieces that the puzzle will generate -->
+		<property name="TimerLimit" value="60" /> <!-- in seconds -->
+	</bean>
+	
+	<bean id="stacker" class="stone.javatasks.control.executables.StackerTrial">
+	</bean>
+
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- MODULE HIERARCHY -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<bean id="moduleHierarchy" class="ch.tatool.core.element.ListElement">
+
+		<property name="handlers">
+			<list>
+				<bean id="main_iterator" class="ch.tatool.core.element.IteratedListSelector" />
+				<bean class="ch.tatool.core.element.handler.pause.DefaultExecutionPauseHandler">
+					<!-- interval between elements in milliseconds -->
+					<property name="defaultInterElementPauseDuration" value="250" />
+				</bean>
+				<bean class="ch.tatool.core.element.handler.ExecutionFeedbackHandler" />
+				<bean class="ch.tatool.core.element.handler.StatusPanelStateHandler">
+					<property name="resetIds">
+						<list>
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_OUTCOME" />
+						</list>
+					</property>
+					<property name="enableIds">
+						<list>
+							<util:constant static-field=
+							"ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_TIMER" />
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_OUTCOME" />
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_TRIAL" />
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_CUSTOM_ONE" />
+						</list>
+					</property>
+					<property name="phase">
+						<util:constant static-field="ch.tatool.exec.ExecutionPhase.PRE_PROCESS" />
+					</property>
+				</bean>
+				<ref bean="keyHandler" />
+			</list>
+		</property>
+
+		<property name="children">
+			<list>
+
+				<!-- GET READY TEXT -->
+				<bean class="ch.tatool.core.element.ExecutableElement">
+					<property name="executable">
+						<ref bean="get-ready" />
+					</property>
+				</bean>	
+
+
+				<!-- Main Task -->
+				
+				<bean id="jigsawSession" class="ch.tatool.core.element.ListElement">
+					<property name="handlers">
+						<list>
+							<ref bean="jigsaw_sessions" />
+						</list>
+					</property>
+					
+					<property name="children">
+					
+						<list>
+										
+							<!-- Jigsaw -->
+							<!-- instruction -->
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="executable">
+									<bean class="stone.javatasks.helperclasses.HTMLExecutable">
+										<property name="base" value="/instructions/Jigsaw/" />
+										<property name="pages">
+											<list>
+												<value>JigsawInstructions.html</value>
+											</list>
+										</property>
+									</bean>
+								</property>
+							</bean>
+							
+							<bean id="runJigsawSession" class="ch.tatool.core.element.ListElement">
+								<property name="handlers">
+									<list>
+										<ref bean="iter_jigsaw" />
+									</list>
+								</property>
+
+								<property name="children">
+									<list>
+									
+										<!-- status panel on -->
+										<bean class="ch.tatool.core.element.ExecutableElement">
+											<property name="executable">
+												<ref bean="status_panel_on_control" />
+											</property>
+										</bean>
+
+										<bean class="ch.tatool.core.element.ExecutableElement">
+											<property name="id" value="exec" />
+											<property name="handlers">
+												<list>
+													<bean class="ch.tatool.core.element.handler.TrialCountHandler" />
+													<bean class="ch.tatool.core.element.handler.DefaultTrialCountEvaluator" />
+													<bean id="jig_level" class="ch.tatool.core.element.handler.score.DefaultPointsAndLevelHandler">
+														<property name="description" value="sudo session" />
+														<property name="sampleSize" value="3" />
+														<property name="minThreshold" value="100" />
+														<property name="maxThreshold" value="100" />
+													</bean>
+													<bean class="ch.tatool.core.element.handler.score.UserFeedbackLevelListener">
+														<property name="levelUpText" value="Well Done. The level will increase!"  />
+														<property name="levelDownText" value="The level will drop by one"/>
+													</bean>
+													<bean class="ch.tatool.core.element.handler.timeout.DefaultVisualTimeoutHandler" >
+														<property name="defaultTimerDuration" value="120000" />
+													</bean>										
+												</list>
+											</property>
+											<property name="executable">
+												<ref bean="jigsaw" />
+											</property>
+										</bean>
+
+									</list>
+								</property>
+							</bean>
+							
+							<!-- BEGIN 2 MINUTES OF STACKER -->
+							
+							<!-- STACKER -->
+							<!-- Display Instructions at start of task -->
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="executable">
+									<bean class="stone.javatasks.helperclasses.HTMLExecutable">
+										<property name="base" value="/instructions/Stacker/" />
+										<property name="pages">
+											<list>
+												<value>StackerInstructions.html</value>
+											</list>
+										</property>
+									</bean>
+								</property>
+							</bean>
+
+							<!-- GET READY TEXT -->
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="executable">
+									<ref bean="get-ready" />
+								</property>
+							</bean>	
+							
+							<bean id="StackerSession" class="ch.tatool.core.element.ListElement">
+								<property name="handlers">
+									<list>
+										<ref bean="stacker_timer" />
+									</list>
+								</property>
+								
+								<property name="children">
+								
+									<list>
+										
+										<!-- ACTIVATE STATUS PANEL -->
+										<bean class="ch.tatool.core.element.ExecutableElement">
+											<property name="executable">
+												<ref bean="status_panel_on_stacker" />
+											</property>
+										</bean>
+										
+										<bean class="ch.tatool.core.element.ExecutableElement">
+											<property name="id" value="exec" />
+											<property name="handlers">
+												<list>
+													<bean class="ch.tatool.core.element.handler.TrialCountHandler" />
+													<bean class="ch.tatool.core.element.handler.DefaultTrialCountEvaluator" />
+												</list>
+											</property>
+											<property name="executable">
+												<ref bean="stacker" />
+											</property>
+										</bean>								
+										
+									</list>
+								</property>
+							</bean>	
+							
+						</list>
+					</property>
+				</bean>		
+				
+				<bean id="wordsearchSession" class="ch.tatool.core.element.ListElement">
+					<property name="handlers">
+						<list>
+							<ref bean="wordsearch_sessions" />
+						</list>
+					</property>
+					
+					<property name="children">
+					
+						<list>
+						
+							<!-- Wordsearch -->
+							<!-- instruction -->
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="executable">
+									<bean class="stone.javatasks.helperclasses.HTMLExecutable">
+										<property name="base" value="/instructions/Wordsearch/" />
+										<property name="pages">
+											<list>
+												<value>WordsearchInstructions.html</value>
+											</list>
+										</property>
+									</bean>
+								</property>
+							</bean>
+				
+							<bean id="runWordsearchSession" class="ch.tatool.core.element.ListElement">
+								<property name="handlers">
+									<list>
+										<ref bean="iter_ws" />
+									</list>
+								</property>
+
+								<property name="children">
+									<list>
+									
+										<!-- status panel on -->
+										<bean class="ch.tatool.core.element.ExecutableElement">
+											<property name="executable">
+												<ref bean="status_panel_on_control" />
+											</property>
+										</bean>
+
+										<bean class="ch.tatool.core.element.ExecutableElement">
+											<property name="id" value="exec" />
+											<property name="handlers">
+												<list>
+													<bean class="ch.tatool.core.element.handler.TrialCountHandler" />
+													<bean class="ch.tatool.core.element.handler.DefaultTrialCountEvaluator" />
+													<bean id="ws_level" class="ch.tatool.core.element.handler.score.DefaultPointsAndLevelHandler">
+														<property name="description" value="sudo session" />
+														<property name="sampleSize" value="3" />
+														<property name="minThreshold" value="100" />
+														<property name="maxThreshold" value="100" />
+													</bean>
+													<bean class="ch.tatool.core.element.handler.score.UserFeedbackLevelListener">
+														<property name="levelUpText" value="Well Done. The level will increase!"  />
+														<property name="levelDownText" value="The level will drop by one"/>
+													</bean>
+													<bean class="ch.tatool.core.element.handler.timeout.DefaultVisualTimeoutHandler" >
+														<property name="defaultTimerDuration" value="120000" />
+													</bean>		
+												</list>
+											</property>
+											<property name="executable">
+												<ref bean="wordsearch" />
+											</property>
+										</bean>
+
+									</list>
+								</property>
+							</bean>
+							
+							<!-- END OF WORDSEARCH SESSION -->
+							
+							<!-- BEGIN 2 MINUTES OF STACKER -->
+							
+							<!-- STACKER -->
+							<!-- Display Instructions at start of task -->
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="executable">
+									<bean class="stone.javatasks.helperclasses.HTMLExecutable">
+										<property name="base" value="/instructions/Stacker/" />
+										<property name="pages">
+											<list>
+												<value>StackerInstructions.html</value>
+											</list>
+										</property>
+									</bean>
+								</property>
+							</bean>
+
+							<!-- GET READY TEXT -->
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="executable">
+									<ref bean="get-ready" />
+								</property>
+							</bean>	
+							
+							<bean id="StackerSession_ws" class="ch.tatool.core.element.ListElement">
+								<property name="handlers">
+									<list>
+										<ref bean="stacker_timer" />
+									</list>
+								</property>
+								
+								<property name="children">
+								
+									<list>
+										
+										<!-- ACTIVATE STATUS PANEL -->
+										<bean class="ch.tatool.core.element.ExecutableElement">
+											<property name="executable">
+												<ref bean="status_panel_on_stacker" />
+											</property>
+										</bean>
+										
+										<bean class="ch.tatool.core.element.ExecutableElement">
+											<property name="id" value="exec" />
+											<property name="handlers">
+												<list>
+													<bean class="ch.tatool.core.element.handler.TrialCountHandler" />
+													<bean class="ch.tatool.core.element.handler.DefaultTrialCountEvaluator" />
+												</list>
+											</property>
+											<property name="executable">
+												<ref bean="stacker" />
+											</property>
+										</bean>								
+										
+									</list>
+								</property>
+							</bean>								
+							
+							<!-- END OF BLOCK -->
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="executable">
+									<bean class="ch.tatool.core.executable.HTMLExecutable">
+										<property name="base" value="/instructions/" />
+										<property name="pages">
+											<list>
+												<value>endOfBlock.htm</value>
+											</list>
+										</property>
+									</bean>
+								</property>
+							</bean>
+							
+						</list>
+					
+					</property>
+					
+				</bean>
+
+				<!-- END -->
+				<bean class="ch.tatool.core.element.ExecutableElement">
+					<property name="executable">
+						<bean class="ch.tatool.core.executable.HTMLExecutable">
+							<property name="base" value="/instructions/" />
+							<property name="pages">
+								<list>
+									<value>endOfModule.htm</value>
+								</list>
+							</property>
+						</bean>
+					</property>
+				</bean>
+			</list>
+		</property>
+	</bean>
+</beans>
+	
+	
+	
+	
+	

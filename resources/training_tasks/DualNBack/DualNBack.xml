@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+
+
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- MODULE SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- MODULE: PROPERTIES -->
+
+	<bean id="moduleProperties" class="org.springframework.beans.factory.config.MapFactoryBean">
+		<property name="sourceMap">
+			<map>
+				<entry key="module.name" value="Dual N-Back" />
+				<entry key="module.version" value="1.2" />
+				<entry key="module.author" value="James Stone" />
+				<entry key="module.description" value="Java implementation of the dual n-back task described by Jaeggi et al.(2008)" />
+				<entry key="module.execution.display.classname" value="ch.tatool.core.display.swing.SwingExecutionDisplayProvider" />
+				<entry key="module.execution.initializer.classname" value="ch.tatool.core.module.initializer.SpringExecutorInitializer" />
+				<entry key="module.execution.display.regionsContainer" value="true" />
+				<entry key="module.scheduler.classname" value="ch.tatool.core.module.scheduler.AlwaysAllowModuleScheduler" />
+				<entry key="module.info.classname" value="ch.tatool.app.gui.ModuleInfoPanel" />
+			</map>
+		</property>
+	</bean>
+	
+	<!-- MODULE: EXPORTERS -->
+	<bean id="moduleExporters" class="org.springframework.beans.factory.config.MapFactoryBean">
+		<property name="sourceMap">
+			<map>
+				<entry key="localExporter">
+					<bean class="ch.tatool.app.export.FileDataExporter">
+						<property name="incrementalExport" value="false" />
+						<property name="autoExport" value="false" />
+					</bean>
+				</entry>
+			</map>
+		</property>
+	</bean>
+	
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- GENERAL SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- KEYBOARD HANDLER -->
+	<bean id="keyHandler" class="ch.tatool.core.element.handler.EscapeKeyEventHandler">
+		<!-- allow to exit module by pressing ESCAPE -->
+		<property name="allowEscapeKey" value="true" />
+	</bean>
+
+	<!-- STATUS PANEL ON -->
+	<bean id="status_panel_on"
+		class="ch.tatool.core.display.swing.status.DefaultModuleStatusRegionConfigurator">
+		<property name="panels">
+			<list>
+				<util:constant
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_DNB_FEEDBACK_LOCI" />
+				<util:constant
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_DNB_FEEDBACK_AUDIO" />
+				<util:constant
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_TRIAL" />
+				<util:constant
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_LEVEL" />
+				<util:constant
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_BLOCK" />
+			</list>
+		</property>
+	</bean>
+
+	<!-- STATUS PANEL OFF -->
+	<bean id="status_panel_off"
+		class="ch.tatool.core.display.swing.status.DefaultModuleStatusRegionConfigurator">
+		<property name="panels">
+			<list>
+			</list>
+		</property>
+	</bean>
+
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- ITERATOR SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- TASK ITERATORS -->
+	
+	<bean id="block-handler" class="ch.tatool.core.element.IteratedListSelector">
+		<property name="numIterations" value="8" /> <!-- number of blocks where each block consists of one run through of stimuli, 20 + level difficulty items. -->
+	</bean>
+
+	<bean id="iter_dual_nback" class="ch.tatool.core.element.IteratedListSelector">
+		<!-- number iterations is set within the executable as it depends on the level. -->
+	</bean>
+	
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- TASK SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- executable that runs an entire colour corsi trial -->
+	<bean id="dual-nback" class="stone.javatasks.executables.DualNBack">
+		<property name="startLevel" value="1" /> <!-- First time module is fired up, starts at level 1 -->
+		<!-- this is currently ignored, may update a future version to use it so other researchers can use it more flexibly, my purpose does not need it at the moment -->
+	</bean>
+
+	<!-- Start of trial pause (get ready) -->
+	<!-- displays a 'get ready' message for given duration prior to start of each trial -->
+	<bean id="get-ready" class="ch.tatool.core.executable.HTMLExecutable">
+		<property name="base" value="/instructions/" />
+		<property name="pages">
+			<list>
+				<value>getReady.html</value>
+			</list>
+		</property>
+		<property name="duration" value="1000" />
+	</bean>
+	
+	
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- MODULE HIERARCHY -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<bean id="moduleHierarchy" class="ch.tatool.core.element.ListElement">
+
+		<property name="handlers">
+			<list>
+				<bean id="main_iterator" class="ch.tatool.core.element.IteratedListSelector" />
+				<bean
+					class="ch.tatool.core.element.handler.pause.DefaultExecutionPauseHandler">
+					<!-- interval between elements in milliseconds -->
+					<property name="defaultInterElementPauseDuration" value="25" />
+				</bean>
+				<bean class="ch.tatool.core.element.handler.ExecutionFeedbackHandler" />
+				<bean class="ch.tatool.core.element.handler.StatusPanelStateHandler">
+					<property name="resetIds">
+						<list>
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_OUTCOME" />
+						</list>
+					</property>
+					<property name="enableIds">
+						<list>
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_DNB_FEEDBACK_LOCI" />
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_DNB_FEEDBACK_AUDIO" />
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_TRIAL" />
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_LEVEL" />
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_BLOCK" />
+						</list>
+					</property>
+					<property name="phase">
+						<util:constant static-field="ch.tatool.exec.ExecutionPhase.PRE_PROCESS" />
+					</property>
+				</bean>
+				<ref bean="keyHandler" />
+			</list>
+		</property>
+
+		<property name="children">
+			<list>
+				
+				<!--DUAL N BACK-->
+				<!-- Display Instructions at start of task -->
+				<bean class="ch.tatool.core.element.ExecutableElement">
+					<property name="executable">
+						<bean class="stone.javatasks.helperclasses.HTMLExecutable">
+							<property name="base" value="/instructions/DualNBack/" />
+							<property name="pages">
+								<list>
+									<value>DualNBackInstructions.html</value>
+								</list>
+							</property>
+						</bean>
+					</property>
+				</bean>
+
+				<!-- GET READY TEXT -->
+				<bean class="ch.tatool.core.element.ExecutableElement">
+					<property name="executable">
+						<ref bean="get-ready" />
+					</property>
+				</bean>	
+				
+				<!-- ACTIVATE STATUS PANEL -->
+				<bean class="ch.tatool.core.element.ExecutableElement">
+					<property name="executable">
+						<ref bean="status_panel_on" />
+					</property>
+				</bean>
+							
+				<!-- Run Trial -->
+				<bean id="TIME" class="ch.tatool.core.element.ListElement">
+					<property name="handlers">
+						<list>
+							<ref bean="block-handler" />
+						</list>
+					</property>
+					
+					<property name="children">
+						<list>
+						
+							<!-- ACTIVATE STATUS PANEL -->
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="executable">
+									<ref bean="status_panel_on" />
+								</property>
+							</bean>
+							
+							<bean id="list-block1" class="ch.tatool.core.element.ListElement">
+								<property name="handlers">
+									<list>
+										<ref bean="iter_dual_nback" />
+									</list>
+								</property>
+			
+								<property name="children">
+									<list>
+									
+										<bean class="ch.tatool.core.element.ExecutableElement">
+											<property name="id" value="exec" />
+											<property name="handlers">
+												<list>
+													<bean class="ch.tatool.core.element.handler.TrialCountHandler" />
+													<bean class="ch.tatool.core.element.handler.DefaultTrialCountEvaluator" />
+													<bean id="level" class="ch.tatool.core.element.handler.score.DefaultPointsAndLevelHandler">
+														<property name="description" value="Dual Nback task" />
+														<property name="sampleSize" value="2" /> <!-- placeholder, gets reset in executable -->
+														<property name="minThreshold" value="77" />
+														<property name="maxThreshold" value="86.1" />
+													</bean>
+													<bean class="ch.tatool.core.element.handler.score.UserFeedbackLevelListener">
+														<property name="levelUpText" value="The value of N will now increase" />
+														<property name="levelDownText" value="The value of N will now decrease"/>
+													</bean>
+												</list>
+											</property>
+											<property name="executable">
+												<ref bean="dual-nback" />
+											</property>
+										</bean>
+			
+									</list>
+								</property>
+							</bean>
+							<!-- END OF BLOCK -->
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="executable">
+									<bean class="ch.tatool.core.executable.HTMLExecutable">
+										<property name="base" value="/instructions/DualNBack/" />
+										<property name="pages">
+											<list>
+												<value>dnb_endOfBlock.htm</value>
+											</list>
+										</property>
+									</bean>
+								</property>
+							</bean>
+							
+						</list>
+					</property>
+				</bean>
+				
+				<!-- END -->
+				<bean class="ch.tatool.core.element.ExecutableElement">
+					<property name="executable">
+						<bean class="ch.tatool.core.executable.HTMLExecutable">
+							<property name="base" value="/instructions/" />
+							<property name="pages">
+								<list>
+									<value>endOfModule.htm</value>
+								</list>
+							</property>
+						</bean>
+					</property>
+				</bean>
+			</list>
+		</property>
+	</bean>
+</beans>

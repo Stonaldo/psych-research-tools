@@ -1,0 +1,573 @@
+package stone.javatasks.executables;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import stone.javatasks.helperclasses.RotatedIcon;
+import stone.javatasks.helperclasses.iconPanel;
+import ch.tatool.core.data.DataUtils;
+import ch.tatool.core.data.IntegerProperty;
+import ch.tatool.core.data.Misc;
+import ch.tatool.core.data.Points;
+import ch.tatool.core.data.Question;
+import ch.tatool.core.data.Result;
+import ch.tatool.core.data.Timing;
+import ch.tatool.core.display.swing.ExecutionDisplayUtils;
+import ch.tatool.core.display.swing.SwingExecutionDisplay;
+import ch.tatool.core.display.swing.container.ContainerUtils;
+import ch.tatool.core.display.swing.container.RegionsContainer;
+import ch.tatool.core.display.swing.container.RegionsContainer.Region;
+import ch.tatool.core.display.swing.panel.CenteredTextPanel;
+import ch.tatool.core.display.swing.status.StatusPanel;
+import ch.tatool.core.display.swing.status.StatusRegionUtil;
+import ch.tatool.core.element.handler.pause.PauseHandlerUtil;
+import ch.tatool.core.executable.BlockingAWTExecutable;
+import ch.tatool.data.DescriptivePropertyHolder;
+import ch.tatool.data.Property;
+import ch.tatool.data.Trial;
+import ch.tatool.exec.ExecutionContext;
+import ch.tatool.exec.ExecutionOutcome;
+import ch.tatool.exec.ExecutionPhase;
+import ch.tatool.exec.ExecutionPhaseListener;
+
+/**
+ * displays a sequence of arrows at various lengths(short or long)/orientations(0-315 at 45 degree intervals) 
+ * that the participant must remember and then reproduce at recall.
+ * @author James Stone
+ *
+ */
+
+public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePropertyHolder, 
+		ExecutionPhaseListener {
+
+	Logger logger = LoggerFactory.getLogger(ArrowSpan.class);
+	
+	private RegionsContainer regionsContainer;
+	
+	//phases of task//
+	public enum Phase {
+		INIT, MEMO, RECALL
+	}
+
+	private Phase currentPhase;	
+	
+	//properties of interest//
+	private IntegerProperty loadProperty = new IntegerProperty("load");
+	private IntegerProperty trialNoProperty = new IntegerProperty("trialNo");
+	
+	private CenteredTextPanel imagePanel;
+	private JPanel recallReminderPanel; //stick in region.SOUTH to display answer given on the fly //
+	private JPanel holderPanel;
+	private JPanel recallPanel;
+	private JPanel textPanel;
+	private recallPanelHandler recallPanelHandler = new recallPanelHandler();
+	private Dimension thisScreenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+	
+	private ArrayList<iconPanel> iPanelsLong;
+	private ArrayList<iconPanel> iPanelsShort;
+	
+	//timing
+	private Timer timer;
+	private TimerTask suspendExecutableTask;
+	private TimerTask startRecallTask;
+	private int displayDuration = 1000; //duration string should be displayed in ms//	
+	
+	//stimuli
+	private int[] spans = {2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7}; //what span sizes do you want to run?//
+	private ArrayList<Integer> spansList = new ArrayList<Integer>();
+	private ArrayList<Integer> stimuliLengths;
+	private ArrayList<Integer> stimuliDegrees;
+	private ImageIcon arrowLong;
+	private ImageIcon arrowShort;
+	private ImageIcon arrowLong45;
+	private ImageIcon arrowShort45;
+	private RotatedIcon thisTrialIcon;
+	
+	private int trialCounter;
+	private int memCounter; //counts memoranda presented per trial//
+	private int respCounter; //counts responses given//
+	private ArrayList<Integer> correctResponse; 
+	private ArrayList<Integer> givenResponse;
+	private ArrayList<Integer> givenDegrees;
+	private ArrayList<Integer> givenLengths;
+	
+	private ArrayList<JPanel> blankPanels;
+	private JPanel inputPromptPanel;
+	
+	private long startTime;
+	private long endTime;
+	
+	private int[] degrees = {0,45,90,135,180,225,270,315};
+	
+	private Random rand;
+	final Font textFont = new Font("Source Code Pro", 1, 24);
+	private String current_user;
+	//private Color recallBG = new Color(253,249,249);
+	
+	public ArrowSpan() {
+		rand = new Random();
+		timer = new Timer();
+		imagePanel = new CenteredTextPanel();
+		recallReminderPanel = new JPanel();
+		holderPanel = new JPanel();
+
+		arrowShort = new ImageIcon(getClass().getResource("/stimuli/imgs/arrows/UP_SHORT_NEW.png"));
+		arrowLong = new ImageIcon(getClass().getResource("/stimuli/imgs/arrows/UP_LONG_NEW.png"));
+		arrowShort45 = new ImageIcon(getClass().getResource("/stimuli/imgs/arrows/UP_SHORT_NEW_45.png"));
+		arrowLong45 = new ImageIcon(getClass().getResource("/stimuli/imgs/arrows/UP_LONG_NEW_45.png"));
+		
+		//compile ArrayList for spans//
+		for (int i = 0; i < spans.length; i++) {
+			spansList.add(spans[i]);
+		}
+		
+		//
+		recallReminderPanel.setBackground(Color.LIGHT_GRAY);
+		holderPanel.setBackground(Color.WHITE);
+		
+		//blank panels
+		JPanel blank1 = new JPanel();
+		JPanel blank2 = new JPanel(); 
+		JPanel blank3 = new JPanel(); 
+		JPanel blank4 = new JPanel(); 
+		JPanel blank5 = new JPanel(); 
+		JPanel blank6 = new JPanel();
+		JPanel blank7 = new JPanel();
+		inputPromptPanel = new JPanel();
+		JLabel inputPromptText = new JLabel("Input: ");
+		
+		blankPanels = new ArrayList<JPanel>();
+		
+		blankPanels.add(blank1);blankPanels.add(blank2);blankPanels.add(blank3);
+		blankPanels.add(blank4);blankPanels.add(blank5);blankPanels.add(blank6);
+		blankPanels.add(blank7);
+		
+		for (JPanel p : blankPanels) {
+			p.setPreferredSize(new Dimension(100,100));
+			p.setBackground(Color.WHITE);
+		}
+		
+		inputPromptText.setFont(textFont);
+		inputPromptPanel.setBackground(Color.LIGHT_GRAY);
+		inputPromptPanel.add(inputPromptText);
+		
+	}
+	
+	//start method//
+	protected void startExecutionAWT() {
+		
+		//initialise environment//
+		ExecutionContext context = getExecutionContext();
+		SwingExecutionDisplay display = ExecutionDisplayUtils.getDisplay(context);
+		ContainerUtils.showRegionsContainer(display);
+		regionsContainer = ContainerUtils.getRegionsContainer();
+		
+		current_user = context.getExecutionData().getModule().getUserAccount().getName();
+		StatusPanel customNamePanel = (StatusPanel) StatusRegionUtil.getStatusPanel("custom1");
+		customNamePanel.setProperty("title","User");
+		customNamePanel.setProperty("value", current_user);
+		
+		regionsContainer.setRegionContent(Region.SOUTH, recallReminderPanel);
+		regionsContainer.setRegionContentVisibility(Region.SOUTH, true);
+		
+		switch(currentPhase) {
+		case INIT:
+			startInitPhase();
+			break;
+		case MEMO:
+			startMemoPhase();
+			break;
+		case RECALL:
+			startRecallPhase();
+			break;
+		}
+	}	
+	
+	private void startInitPhase() {
+		
+		correctResponse = new ArrayList<Integer>();
+		givenResponse = new ArrayList<Integer>();
+		givenDegrees = new ArrayList<Integer>();
+		givenLengths = new ArrayList<Integer>();
+		stimuliLengths = new ArrayList<Integer>();
+		stimuliDegrees = new ArrayList<Integer>();
+
+		generateStimuli();
+		
+		//reset stim counter//
+		memCounter = 0;
+		respCounter = 0;
+		
+		Result.getResultProperty().setValue(this,null);
+		
+		//start memo phase//
+		currentPhase = Phase.MEMO;
+		startMemoPhase();
+	}
+	
+	private void startMemoPhase() {
+		
+		PauseHandlerUtil.setCurrentInterElementPauseDuration(getExecutionContext(), 1000);
+		
+		setThisTrialIcon();
+		
+		imagePanel.setIcon(thisTrialIcon);
+		
+		memCounter++; //incremement memCounter as an additional digit/word has been shown//
+		
+		//if this is is last stim then change to recall phase//
+		
+		if (memCounter == stimuliLengths.size()) {
+			currentPhase = Phase.RECALL;
+		}
+		
+		//suspend for specified amount of time, this is presentation time of each digit/word//
+		suspendExecutableTask = new TimerTask() {
+			public void run() {
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run() {
+						suspendExecutable(); // suspend task
+					}
+				});
+			}
+		};
+
+		regionsContainer.setRegionContent(Region.CENTER, imagePanel);
+		regionsContainer.setRegionContentVisibility(Region.CENTER, true);
+		timer.schedule(suspendExecutableTask, displayDuration);		
+	}
+	
+	
+	private void startRecallPhase() {
+		PauseHandlerUtil.setCurrentInterElementPauseDuration(getExecutionContext(), 250);
+		generateRecallPanel();
+		holderPanel.add(textPanel);
+		holderPanel.add(recallPanel);
+		regionsContainer.setRegionContent(Region.CENTER, holderPanel);
+		Timing.getStartTimeProperty().setValue(this, new Date());
+		startTime = System.nanoTime();
+		
+		regionsContainer.setRegionContentVisibility(Region.CENTER, true);		
+	}	
+
+	private void generateStimuli() {
+		
+		//take random int from spans to use as list length in this trial, then remove that element from spans//
+		//int spanIndice = rand.nextInt(spansList.size());
+		int thisTrialSpan = spansList.get(0);
+		spansList.remove(0);		
+
+		for (int j = 0; j < thisTrialSpan; j++) {
+			//generate random int of 0 or 1 that will determine the length of the arrow 0=short 1=long
+			int tmpLength = rand.nextInt(2);
+			//generate random int to use as selection criteria for orientation.
+			int tmpDegree = rand.nextInt(degrees.length);
+			//now we add these values to their respective arraylists
+			//but first we need to check the combination does not already exist
+			boolean alreadyExist = false;
+			for (int i = 0; i < stimuliLengths.size(); i++) {
+				if (stimuliLengths.get(i) == tmpLength & stimuliDegrees.get(i) == degrees[tmpDegree]) {
+					alreadyExist = true;
+				}
+			}
+			
+			if (alreadyExist) {
+				j--;
+			} else {
+				stimuliLengths.add(tmpLength);
+				stimuliDegrees.add(degrees[tmpDegree]);
+			}			
+		}
+
+	}
+	
+	private void setThisTrialIcon() {
+		//get the degree of rotation for this item as decided by initialisation of stims
+		int thisItemRotation = stimuliDegrees.get(memCounter);
+		//if it is a 45,135,225,315 degree rotation we use the _45 image as it is clearer and solves a sizing issue after rotation.
+		//so we get a marker for if it is one of these rotations and use this marker to select the right image icon.
+		boolean marker45;
+		if (thisItemRotation % 10 > 0)
+			marker45 = true;
+		else
+			marker45 = false;		
+		
+		if (stimuliLengths.get(memCounter) == 0) {
+			//then its a short arrow
+			if (marker45)
+				thisTrialIcon = new RotatedIcon(arrowShort45, thisItemRotation - 45);
+			else
+				thisTrialIcon = new RotatedIcon(arrowShort, thisItemRotation);
+		} else if (stimuliLengths.get(memCounter) == 1) {
+			//then a long arrow
+			if (marker45)
+				thisTrialIcon = new RotatedIcon(arrowLong45, thisItemRotation - 45);
+			else
+				thisTrialIcon = new RotatedIcon(arrowLong, thisItemRotation);
+		}
+	}
+	
+	
+	private void generateRecallPanel() {
+		textPanel = new JPanel();
+		textPanel.setPreferredSize(new Dimension(thisScreenSize.width,215));
+		textPanel.setBackground(Color.WHITE);
+		
+		JLabel text = new JLabel("Click on the arrows you were presented with in sequence");
+		text.setFont(textFont);
+		
+		textPanel.add(text);
+		
+		recallPanel = new JPanel();
+		recallPanel.setPreferredSize(new Dimension(875,265));
+		recallPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+		recallPanel.setBackground(Color.WHITE);
+		recallPanel.setBorder(BorderFactory.createTitledBorder("Click the arrows in the order they were presented"));
+		
+		iconPanel long_0 = new iconPanel(arrowLong,degrees[0],100,100,false);
+		iconPanel long_1 = new iconPanel(arrowLong45,degrees[1]-45,100,100,true);
+		iconPanel long_2 = new iconPanel(arrowLong,degrees[2],100,100,false);
+		iconPanel long_3 = new iconPanel(arrowLong45,degrees[3]-45,100,100,true);
+		iconPanel long_4 = new iconPanel(arrowLong,degrees[4],100,100,false);
+		iconPanel long_5 = new iconPanel(arrowLong45,degrees[5]-45,100,100,true);
+		iconPanel long_6 = new iconPanel(arrowLong,degrees[6],100,100,false);
+		iconPanel long_7 = new iconPanel(arrowLong45,degrees[7]-45,100,100,true);
+		
+		iconPanel short_0 = new iconPanel(arrowShort,degrees[0],100,100,false);
+		iconPanel short_1 = new iconPanel(arrowShort45,degrees[1]-45,100,100,true);
+		iconPanel short_2 = new iconPanel(arrowShort,degrees[2],100,100,false);
+		iconPanel short_3 = new iconPanel(arrowShort45,degrees[3]-45,100,100,true);
+		iconPanel short_4 = new iconPanel(arrowShort,degrees[4],100,100,false);
+		iconPanel short_5 = new iconPanel(arrowShort45,degrees[5]-45,100,100,true);
+		iconPanel short_6 = new iconPanel(arrowShort,degrees[6],100,100,false);
+		iconPanel short_7 = new iconPanel(arrowShort45,degrees[7]-45,100,100,true);	
+		
+		iPanelsLong = new ArrayList<iconPanel>();
+		iPanelsShort = new ArrayList<iconPanel>();
+		
+		iPanelsLong.add(long_0);iPanelsLong.add(long_1);iPanelsLong.add(long_2);
+		iPanelsLong.add(long_3);iPanelsLong.add(long_4);iPanelsLong.add(long_5);
+		iPanelsLong.add(long_6);iPanelsLong.add(long_7);
+		
+		iPanelsShort.add(short_0);iPanelsShort.add(short_1);iPanelsShort.add(short_2);
+		iPanelsShort.add(short_3);iPanelsShort.add(short_4);iPanelsShort.add(short_5);
+		iPanelsShort.add(short_6);iPanelsShort.add(short_7);
+		
+		for (iconPanel t : iPanelsLong) {
+			recallPanel.add(t);
+			t.addMouseListener(recallPanelHandler);
+		}
+		for (iconPanel t : iPanelsShort) {
+			recallPanel.add(t);
+			t.addMouseListener(recallPanelHandler);
+		}
+		
+		recallReminderPanel.add(inputPromptPanel);
+		
+	}
+	
+	public void processExecutionPhase(ExecutionContext context) {
+		if (context.getPhase().equals(ExecutionPhase.SESSION_START)) {
+			currentPhase = Phase.INIT;
+			trialCounter = 0;
+		}
+	}
+	
+	protected void cancelExecutionAWT() {
+		timer.cancel();
+		currentPhase = Phase.INIT;
+    }		
+	
+	public Property<?>[] getPropertyObjects() {
+		return new Property[] { Points.getMinPointsProperty(),
+				Points.getPointsProperty(), Points.getMaxPointsProperty(),
+				Question.getQuestionProperty(), Question.getAnswerProperty(),
+				Question.getResponseProperty(), Result.getResultProperty(),
+				Timing.getStartTimeProperty(), Timing.getEndTimeProperty(),
+				Timing.getDurationTimeProperty(), Misc.getOutcomeProperty(),
+				loadProperty, trialNoProperty };
+	}	
+	
+	
+	private void processProperties() {
+		endTime = System.nanoTime();
+		Timing.getEndTimeProperty().setValue(this, new Date());
+		
+		correctResponse = stimuliLengths;
+		correctResponse.addAll(stimuliDegrees);
+		
+		givenResponse = givenLengths;
+		givenResponse.addAll(givenDegrees);
+		
+		System.out.println("correctResponse: " + correctResponse);
+		System.out.println("givenResponse: " + givenResponse);
+
+		Question.getResponseProperty().setValue(this, givenResponse);
+		Question.setQuestionAnswer(this, String.valueOf(correctResponse), correctResponse);
+		boolean success = correctResponse.equals(givenResponse);
+		loadProperty.setValue(this, stimuliLengths.size());
+		
+		Points.setZeroOneMinMaxPoints(this);
+		Points.setZeroOnePoints(this, success);
+		Result.getResultProperty().setValue(this, success);
+		
+		Misc.getOutcomeProperty().setValue(this, ExecutionOutcome.FINISHED); //may be a prob?!//
+		
+		trialNoProperty.setValue(this, trialCounter + 1);
+		
+		// set duration time property
+		long duration = 0;
+		if (endTime > 0) {
+			duration = endTime - startTime;
+		}
+		long ms = (long) duration / 1000000;
+		Timing.getDurationTimeProperty().setValue(this, ms);
+
+		if (getExecutionContext() != null) {
+			Misc.getOutcomeProperty().setValue(getExecutionContext(), ExecutionOutcome.FINISHED);
+		}
+		
+		// create new trial and store all executable properties in the trial
+		Trial currentTrial = getExecutionContext().getExecutionData().addTrial();
+		currentTrial.setParentId(getId());
+		DataUtils.storeProperties(currentTrial, this);		
+		
+	}
+	
+	
+	private void endTask() {
+		currentPhase = Phase.INIT;
+		trialCounter++;
+		
+		holderPanel.removeAll();
+		recallPanel.removeAll();
+		recallReminderPanel.removeAll();
+		
+		if (getFinishExecutionLock()) {
+			finishExecution();
+		}		
+	}	
+	
+	
+	/**
+	 * Sets the outcome of this executable to SUSPENDED in order for us to be
+	 * able to continue where we left after other executables have executed.
+	 */
+	private void suspendExecutable() {
+		regionsContainer.setRegionContentVisibility(Region.CENTER, false);
+
+		// set outcome in the execution context to SUSPENDED to mark compound
+		// element as being suspended in order to return later
+		if (getExecutionContext() != null) {
+			Misc.getOutcomeProperty().setValue(getExecutionContext(), ExecutionOutcome.SUSPENDED);
+		}
+		// finish the execution and make sure nothing else already did so
+		if (getFinishExecutionLock()) {
+			finishExecution();
+		}
+	}
+	
+	private void refreshRegion(Region reg) {
+		regionsContainer.setRegionContentVisibility(reg, false);
+		recallReminderPanel.revalidate();
+		regionsContainer.setRegionContentVisibility(reg, true);
+	}
+	
+	
+	private class recallPanelHandler implements MouseListener {
+
+		public void mouseClicked(MouseEvent event) {
+			iconPanel panelClicked = (iconPanel)(event.getSource());
+			
+			recallReminderPanel.add(panelClicked);
+			System.out.println("click " + respCounter);
+			
+			//add the length selection of the participant to the array//
+			if (iPanelsLong.contains(panelClicked)) {
+				givenLengths.add(1);
+			} else if (iPanelsShort.contains(panelClicked)) {
+				givenLengths.add(0);
+			}
+			
+			//add the degree selection of the participant to the array//
+			givenDegrees.add(panelClicked.getDegree());
+			
+			respCounter++;
+			
+			refreshRecallPanel();
+			refreshRegion(Region.SOUTH);
+			
+			if (respCounter >= stimuliLengths.size()) {
+				regionsContainer.setRegionContentVisibility(Region.CENTER, false);
+				processProperties();
+				endTask();
+			}
+			
+			
+			
+		}
+		
+		public void mousePressed(MouseEvent event){}
+		
+		public void mouseReleased(MouseEvent event){}
+		
+		public void mouseEntered(MouseEvent event){}
+		
+		public void mouseExited(MouseEvent event){}	
+		
+	}
+	
+	private void refreshRecallPanel() {
+		recallPanel.removeAll();
+		
+		Component[] tmp = recallReminderPanel.getComponents();
+		ArrayList<Component> tmp2 = new ArrayList<Component>();
+		
+		int counter = 0;
+		
+		for (Component x : tmp) {
+			tmp2.add(x);
+		}
+		
+		for (iconPanel t : iPanelsLong) {
+			if (tmp2.contains(t)) {
+				recallPanel.add(blankPanels.get(counter));
+				counter++;
+			} else {
+				recallPanel.add(t);
+			}
+		}
+		
+		for (iconPanel t : iPanelsShort) {
+			if (tmp2.contains(t)) {
+				recallPanel.add(blankPanels.get(counter));
+				counter++;
+			} else {
+				recallPanel.add(t);
+			}
+		}
+		
+		recallPanel.revalidate();
+		refreshRegion(Region.CENTER);
+	}
+	
+}

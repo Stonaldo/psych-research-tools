@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="../instructs_style.css" />
+</head>
+<body>
+	<div id="container">
+		<div class='title'>Dual N Back</div>
+		
+		<div class='text'>
+			<h2>Instructions</h2>
+			<h3>Presentation Phase</h3>
+			<br>
+			This is the dual n-back task. In this task you will be required to keep track of two streams of information simultaneously! You will see a cross in the centre of the screen which indicates where you should look, this fixation point is surrounded by <span class='highlight_red'>8</span> squares. 
+			<br>
+			When the task starts you will see one of these grids 'light up' <span class='highlight_red'>every 3 seconds</span>. At the same time as the grid lighting up you will also hear a letter through the headphones: 
+			<br>
+			<br>
+			<img src="dnb_imgs/dnb_pres_audio_half.png" />
+			<br>
+			<br>
+			You need to try and remember the sequence of grids, and the sequence of letters so that you can respond appropriately. The aim of this task is to respond when either the newest grid is the same as the grid <span class='highlight_red'>N</span> items ago or when the letter matches the letter shown <span class='highlight_red'>N</span> items ago. 
+			<br>
+			<br>
+			The value of N is the current level of difficulty and will always be present in the <span class='highlight_red'>'Level'</span> box in the status panel.
+			<br>
+			<h3>Recall Phase</h3>
+			<br>
+			When you see a grid match you press the '1' key and when you hear a letter match you press the '0' key. 
+			<br>
+			<br>
+			Example: If the current level of N is 2, then my pattern of response for the following letters should be:
+			<table border="2">
+				<tr>
+					<th>item number</th>
+					<th>item letter</th>
+					<th>Correct Action</th>
+				</tr>
+				<tr>
+					<td>1</td>
+					<td>"F"</td>
+					<td><span class='highlight_red'>Do nothing</span></td>
+				</tr>
+				<tr>
+					<td>2</td>
+					<td>"G"</td>
+					<td><span class='highlight_red'>Do nothing</span></td>
+				</tr>
+				<tr>
+					<td>3</td>
+					<td>"H"</td>
+					<td><span class='highlight_red'>Do nothing</span></td>
+				</tr>
+				<tr>
+					<td>4</td>
+					<td>"G"</td>
+					<td><span class='highlight_red'>Press the '0' key (because the letter 'G' was presented 2 items ago)</span></td>
+				</tr>
+				<tr>
+					<td>5</td>
+					<td>"H"</td>
+					<td><span class='highlight_red'>Press the '0' key (because the letter 'H' was presented 2 items ago)</span></td>
+				</tr>
+				
+			</table>
+			<br>
+			<br>
+			<img src="dnb_imgs/dnb_feedback_example_half.png" />
+			<br>
+			<br>
+			The 'GRID' and 'LETTER' boxes in the status panel will give you feedback on whether you responded to the stimulus correctly (each will flash with a green tick or a red x depending on accuracy) as shown in the above image.
+			<br>
+		</div>
+		<div class='text'>
+			Press the <span class='highlight_red'>right arrow key</span> on your
+			keyboard to start the task.
+		</div>
+	</div>
+</body>
+</html>

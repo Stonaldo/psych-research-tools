@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+
+
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- MODULE SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- MODULE: PROPERTIES -->
+	<bean id="moduleProperties" class="org.springframework.beans.factory.config.MapFactoryBean">
+		<property name="sourceMap">
+			<map>
+				<entry key="module.name" value="Inspection Time" />
+				<entry key="module.version" value="1" />
+				<entry key="module.author" value="James Stone" />
+				<entry key="module.description" value="Implementation of the Inspection Time task" />
+				<entry key="module.execution.display.classname" value="ch.tatool.core.display.swing.SwingExecutionDisplayProvider" />
+				<entry key="module.execution.initializer.classname" value="ch.tatool.core.module.initializer.SpringExecutorInitializer" />
+				<entry key="module.execution.display.regionsContainer" value="true" />
+				<entry key="module.scheduler.classname" value="ch.tatool.core.module.scheduler.AlwaysAllowModuleScheduler" />
+				<entry key="module.info.classname" value="ch.tatool.app.gui.ModuleInfoPanel" />
+			</map>
+		</property>
+	</bean>
+
+	<!-- MODULE: EXPORTERS -->
+	<bean id="moduleExporters" class="org.springframework.beans.factory.config.MapFactoryBean">
+		<property name="sourceMap">
+			<map>
+				<entry key="localExporter">
+					<bean class="ch.tatool.app.export.FileDataExporter">
+						<property name="incrementalExport" value="false" />
+						<property name="autoExport" value="false" />
+					</bean>
+				</entry>
+				<!--<entry key="serverExporter"> 
+					<bean class="ch.tatool.app.export.ServerDataExporter"> 
+						<property name="incrementalExport" value="true" /> 
+						<property name="autoExport" value="true" /> 
+						<property name="url" value="http://jamesmstone.co.uk/cog_serve/data/upload.php" /> 
+					</bean> 
+				</entry>-->
+			</map>
+		</property>
+	</bean>
+
+
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- GENERAL SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- KEYBOARD HANDLER -->
+	<bean id="keyHandler" class="ch.tatool.core.element.handler.EscapeKeyEventHandler">
+		<!-- allow to exit module by pressing ESCAPE -->
+		<property name="allowEscapeKey" value="true" />
+	</bean>
+
+	<!-- STATUS PANEL ON -->
+	<bean id="status_panel_on"
+		class="ch.tatool.core.display.swing.status.DefaultModuleStatusRegionConfigurator">
+		<property name="panels">
+			<list>
+				<util:constant 
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_OUTCOME" />
+				<util:constant 
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_TRIAL" />
+				<util:constant 
+					static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_CUSTOM_ONE" />
+			</list>
+		</property>
+	</bean>
+
+	<!-- STATUS PANEL OFF -->
+	<bean id="status_panel_off"
+		class="ch.tatool.core.display.swing.status.DefaultModuleStatusRegionConfigurator">
+		<property name="panels">
+			<list>
+			</list>
+		</property>
+	</bean>
+
+
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- ITERATOR SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- TASK ITERATORS -->
+
+	<bean id="iter_IT" class="ch.tatool.core.element.IteratedListSelector">
+		<!-- number of iterations -->
+		<property name="numIterations" value="999" /> <!-- overriden in the executable. Will terminate upon 8 reversals of direction of the staircase algorithm. -->
+	</bean>
+
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- TASK SETTINGS -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<!-- WMP -->
+
+	<bean id="inspection_time" class="stone.javatasks.executables.InspectionTime">
+		<property name="initialSOA" value="250" />
+	</bean>
+
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+	<!-- MODULE HIERARCHY -->
+	<!-- +++++++++++++++++++++++++++++++++++++++ -->
+
+	<bean id="moduleHierarchy" class="ch.tatool.core.element.ListElement">
+
+		<property name="handlers">
+			<list>
+				<bean id="main_iterator" class="ch.tatool.core.element.IteratedListSelector" />
+				<bean class="ch.tatool.core.element.handler.pause.DefaultExecutionPauseHandler">
+					<!-- interval between elements in milliseconds -->
+					<property name="defaultInterElementPauseDuration" value="250" />
+				</bean>
+				<bean class="ch.tatool.core.element.handler.ExecutionFeedbackHandler" />
+				<bean class="ch.tatool.core.element.handler.StatusPanelStateHandler">
+					<property name="resetIds">
+						<list>
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_OUTCOME" />
+						</list>
+					</property>
+					<property name="enableIds">
+						<list>
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_OUTCOME" />
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_TRIAL" />
+							<util:constant static-field="ch.tatool.core.display.swing.status.StatusPanel.STATUS_PANEL_CUSTOM_ONE" />
+						</list>
+					</property>
+					<property name="phase">
+						<util:constant static-field="ch.tatool.exec.ExecutionPhase.PRE_PROCESS" />
+					</property>
+				</bean>
+				<ref bean="keyHandler" />
+			</list>
+		</property>
+
+		<property name="children">
+			<list>
+				<!-- WMP -->
+				<!-- instruction -->
+				<bean class="ch.tatool.core.element.ExecutableElement">
+					<property name="executable">
+						<bean class="stone.javatasks.helperclasses.HTMLExecutable">
+							<property name="base" value="/instructions/InspectionTime/" />
+							<property name="pages">
+								<list>
+									<value>InspectionTimeInstructions.html</value>
+								</list>
+							</property>
+						</bean>
+					</property>
+				</bean>
+
+				<!-- practice -->
+
+
+				<!-- Main Task -->
+
+				
+				<bean id="list-block1" class="ch.tatool.core.element.ListElement">
+					<property name="handlers">
+						<list>
+							<ref bean="iter_IT" />
+						</list>
+					</property>
+
+					<property name="children">
+						<list>
+							<!-- status panel on -->
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="executable">
+									<ref bean="status_panel_on" />
+								</property>
+							</bean>
+
+							<bean class="ch.tatool.core.element.ExecutableElement">
+								<property name="id" value="exec" />
+								<property name="handlers">
+									<list>
+										<bean class="ch.tatool.core.element.handler.TrialCountHandler" />
+										<bean class="ch.tatool.core.element.handler.DefaultTrialCountEvaluator" />
+										<!--
+										<bean id="level" class="ch.tatool.core.element.handler.score.DefaultPointsAndLevelHandler">
+											<property name="description" value="WMP Task" />
+											<property name="sampleSize" value="100" />
+											<property name="minThreshold" value="25" />
+											<property name="maxThreshold" value="75" />
+										</bean> 
+										<bean class="ch.tatool.core.element.handler.score.UserFeedbackLevelListener">
+											<property name="levelUpText" value="Well Done. The level will increase!"  />
+											<property name="levelDownText" value="The level will drop by one"/>
+										</bean>-->
+									</list>
+								</property>
+								<property name="executable">
+									<ref bean="inspection_time" />
+								</property>
+							</bean>
+
+						</list>
+					</property>
+				</bean>
+				<!-- END OF BLOCK -->
+				<bean class="ch.tatool.core.element.ExecutableElement">
+					<property name="executable">
+						<bean class="ch.tatool.core.executable.HTMLExecutable">
+							<property name="base" value="/instructions/" />
+							<property name="pages">
+								<list>
+									<value>endOfBlock.htm</value>
+								</list>
+							</property>
+						</bean>
+					</property>
+				</bean>
+
+				<!-- END -->
+				<bean class="ch.tatool.core.element.ExecutableElement">
+					<property name="executable">
+						<bean class="ch.tatool.core.executable.HTMLExecutable">
+							<property name="base" value="/instructions/" />
+							<property name="pages">
+								<list>
+									<value>endOfModule.htm</value>
+								</list>
+							</property>
+						</bean>
+					</property>
+				</bean>
+			</list>
+		</property>
+	</bean>
+</beans>

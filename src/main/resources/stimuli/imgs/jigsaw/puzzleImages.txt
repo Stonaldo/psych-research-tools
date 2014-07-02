@@ -1,0 +1,17 @@
+goose.jpg Animal
+tele_booth.jpg Telephone
+hst_pillars_m16_close.jpg Space
+hst_carina_ngc3372_0006.jpg Space 3
+mario.jpg mario
+elephant.jpg elephant
+goldengatebridge.jpg golden_gate_bridge
+hop.jpg houses of parliament
+panda.jpg panda
+simpsons.jpg simpsons
+simpsons2.jpg simpsons2
+wembley.jpg wembley
+aurora.jpg aurora
+grandcanyon.jpg grand_canyon
+lion.jpg lion
+rain.jpg rain
+rubiks.jpg rubiks

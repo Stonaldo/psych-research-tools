@@ -1,0 +1,38 @@
+I can see with my eyes,y
+A cat has four legs,y
+A house is made of bricks,y
+A king wears a crown,y
+You can hear with your ears,y
+The sea is very deep,y
+The number after two is three,y
+The number after ten is eleven,y
+Stone is very hard,y
+Thomas is a name for a boy,y
+A baby duck is called a duckling,y
+Jack and Jill went up the hill,y
+A birthday cake has candles,y
+A feather is very light,y
+Schools have a playground,y
+A flower has petals,y
+To make tea you need a teapot,y
+A hairdresser cuts hair,y
+You can use an umbrella if it rains,y
+Donkeys live in dustbins,n
+A bat can fly a helicopter,n
+A squirrel likes to eat potatoes,n
+We have Easter in November,n
+A suitcase is made of jelly,n
+A trampoline is made of butter,n
+A crocodile is coloured blue,n
+A cloud is made of rubber,n
+Boots are made of milk,n
+Your nose is on your arm,n
+You eat your dinner with a spade,n
+Fish can play the guitar,n
+You tell the time with a calculator,n
+Rainbows appear on the fridge,n
+A boat likes to eat crisps,n
+Sand is very sharp,n
+A book is a musical instrument,n
+Ice cream feels very hot,n
+A pavement is made of plums,n
