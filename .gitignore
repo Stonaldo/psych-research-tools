@@ -1,4 +1,11 @@
 /target
 /bin
+target/
+bin/
 /src/test/*
-/src/test
+/src/test/
+src/test
+src/test/
+/.tatooldata
+.tatooldata/
+/.tatooldata/

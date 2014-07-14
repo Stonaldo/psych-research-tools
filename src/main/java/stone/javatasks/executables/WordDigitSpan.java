@@ -5,7 +5,6 @@ import java.awt.Font;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -59,9 +58,8 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 	
 	Logger logger = LoggerFactory.getLogger(WordDigitSpan.class);
 	
-	private RegionsContainer regionsContainer;
-	private int complexSpan;
-	private String current_user;	
+	private RegionsContainer regionsContainer; 
+	String current_user;	
 	private int StimuliType = 0; //set this using the XML, 1 for digits, 2 for words.//
 	
 	final Font treb = new Font("Trebuchet MS", 1, 26);
@@ -95,10 +93,22 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 	private ArrayList<String> wordBank = new ArrayList<String>(); //method will fill this arraylist with words from an external file//
 	private String WordBankFileName = "";
 	private Random rand;
+	private int minDigit = 1; //the smallest digit that can be selected to-be-remembered, can be changed using XML.
+	private int maxDigit = 99; // the largest digit that can be selected to-be-remembered, can be changed using XML.
 	
-	private int[] simpleSpans = {2,2,2,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6};
-	private int[] complexSpans = {2,2,2,2,2,2,3,3,3,4,4,4,5,5,5};
+	//trials
+	private int spanTwoTrials = 0; //default zero, if set in the xml then these will be replaced.
+	private int spanThreeTrials = 0;
+	private int spanFourTrials = 0;
+	private int spanFiveTrials = 0;
+	private int spanSixTrials = 0;
+	private int spanSevenTrials = 0;
+	private int spanEightTrials = 0;
+	private int spanNineTrials = 0;
+	//will then use these values to populate the spansList.
 	private ArrayList<Integer> spansList = new ArrayList<Integer>();
+	//should the list length be ordered presentation or randomised
+	private int randomisedTrials = 0; //default is 0 which is for in sequence, set to 1 in the XML for randomised order.
 	
 	private int trialCounter = 0;
 	private int memCounter; //counts memoranda presented per trial//
@@ -135,7 +145,10 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 
 	}
 	
-	//start method//
+	/*
+	 * start method
+	 * @see ch.tatool.core.executable.BlockingAWTExecutable#startExecutionAWT()
+	 */
 	protected void startExecutionAWT() {
 		//initialise environment//
 		ExecutionContext context = getExecutionContext();
@@ -143,6 +156,7 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		ContainerUtils.showRegionsContainer(display);
 		regionsContainer = ContainerUtils.getRegionsContainer();
 		
+		//get the username of the current user and uses it to set the values of the custom status panel//
 		current_user = context.getExecutionData().getModule().getUserAccount().getName();
 		StatusPanel customNamePanel = (StatusPanel) StatusRegionUtil.getStatusPanel("custom1");
 		customNamePanel.setProperty("title","User");
@@ -161,6 +175,11 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		}
 	}
 	
+	/*
+	 * If this is the very start of a trial then this method is called.
+	 * Resets some variables while calling the method to generate the stimuli 
+	 * to be used.
+	 */
 	private void startInitPhase() {
 		generateStimuli();
 		
@@ -175,6 +194,10 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		startMemoPhase();
 	}
 	
+	/*
+	 * If phase is set to memo then the program needs to start displaying the 
+	 * words/digits(memoranda). 
+	 */
 	private void startMemoPhase() {
 		
 		String stimulus = "";
@@ -218,6 +241,10 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		timer.schedule(suspendExecutableTask, displayDuration);		
 	}
 	
+	/*
+	 * method that is called if we are in the recall phase. Handles the response 
+	 * input from the user.
+	 */
 	private void startRecallPhase() {
 		StringBuilder text = new StringBuilder();
 		if (StimuliType == 1) {
@@ -243,7 +270,7 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		responsePanel.enableActionPanel();		
 	}
 
-	/**
+	/*
 	 * Sets the outcome of this executable to SUSPENDED in order for us to be
 	 * able to continue where we left after other executables have executed.
 	 */
@@ -261,7 +288,10 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		}
 	}
 	
-	//listens to the user input and responds accordingly//
+	/*
+	 * listens to the user input and responds accordingly//(non-Javadoc)
+	 * @see ch.tatool.core.display.swing.action.ActionPanelListener#actionTriggered(ch.tatool.core.display.swing.action.ActionPanel, java.lang.Object)
+	 */
 	public void actionTriggered(ActionPanel source, Object actionValue) {
 		if (StimuliType == 1) {
 			try {
@@ -273,7 +303,7 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 				givenResponseWord = (String) actionValue;
 		}
 		
-		//debugging purposes
+		//debugging purposes (remove when satisfied with performance)
 		List<IteratedListSelector> ILSS = (List<IteratedListSelector>)(List<?>) ElementUtils.findHandlersInStackByType(getExecutionContext(), IteratedListSelector.class);
 		System.out.println("executed iterations: " + ILSS.get(0).getExecutedIterations());
 
@@ -398,7 +428,11 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		DataUtils.storeProperties(currentTrial, this);
 	}	
 	
-	//update status panel//
+	/*
+	 * Not quite sure why I have included this, although I am sure I had reason to at the time.
+	 * Tatool should take care of feedback if I have set the variables and asked for a 
+	 * feedback status panel....look into this.
+	 */
 	private void changeStatusPanelOutcome(Boolean value) {
         StatusPanel panelFeedback = StatusRegionUtil.getStatusPanel(StatusPanel.STATUS_PANEL_OUTCOME);
         if (panelFeedback != null) {
@@ -413,6 +447,8 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 	/**
 	 * Is called whenever we copy the properties from our executable to a trial
 	 * object for persistence with the help of the DataUtils class.
+	 * 
+	 * @see ch.tatool.data.DescriptivePropertyHolder#getPropertyObjects()
 	 */
 	public Property<?>[] getPropertyObjects() {
 		return new Property[] { Points.getMinPointsProperty(),
@@ -424,45 +460,31 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 				loadProperty, trialNoProperty };
 	}
 
-	/**
+	/*
 	 * Is called whenever the Tatool execution phase changes. We use the
 	 * SESSION_START phase to read our stimuli list and set the executable phase
 	 * to INIT.
+	 * 
+	 * @see ch.tatool.exec.ExecutionPhaseListener#processExecutionPhase(ch.tatool.exec.ExecutionContext)
 	 */
 	public void processExecutionPhase(ExecutionContext context) {
 		if (context.getPhase().equals(ExecutionPhase.SESSION_START)) {
 			currentPhase = Phase.INIT;
 		}
 	}
-	
+	/*
+	 * (non-Javadoc)
+	 * @see ch.tatool.core.executable.BlockingAWTExecutable#cancelExecutionAWT()
+	 */
 	protected void cancelExecutionAWT() {
 		timer.cancel();
 		currentPhase = Phase.INIT;
     }
 	
-	public int getStimuliType() {
-		return StimuliType;
-	}
-	
-	public void setStimuliType(int StimuliType) {
-		this.StimuliType = StimuliType;
-	}
-	
-	public String getWordBankFileName() {
-		return WordBankFileName;
-	}
-	
-	public void setWordBankFileName(String WordBankFileName) {
-		this.WordBankFileName = WordBankFileName;
-	}
-	
-	public int getcomplexSpan() {
-		return this.complexSpan;
-	}
-	public void setcomplexSpan(int c) {
-		this.complexSpan = c;
-	}
-	
+	/*
+	 * If using the executable to run words rather than digits as the stimuli then this 
+	 * method is called to generate the word bank from the data file provided.
+	 */
 	private ArrayList<String> generateWordBank(String filename) {
 		
 		Scanner s;
@@ -484,37 +506,47 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		return list;
 	}
 	
+	/**
+	 * Method called at the start of a trial to select the required stimuli to use
+	 * for that trial.
+	 */
 	private void generateStimuli() {
 		
-		//if first trial then generate trial spans
+		//if first trial then generate trial spans and set executable iterations
 		if (trialCounter == 0) {
 			//compile ArrayList for spans//
-			System.out.println("complexSpan: " + complexSpan);
 			System.out.println("trialCounter: " + trialCounter);
 			System.out.println("stimuliType: " + StimuliType);
-			if (complexSpan == 1) {
-				for (int i = 0; i < complexSpans.length; i++) {
-					spansList.add(complexSpans[i]);
-				}			
-			} else if (complexSpan == 0) {
-				for (int i = 0; i < simpleSpans.length; i++) {
-					spansList.add(simpleSpans[i]);
-				}
-			}
-			System.out.println("spansList: " + spansList);			
+			
+			spansList = generateSpanList();
+			
+			System.out.println("spansList: " + spansList);
+			setNumIterations();
 		}
 		
-		//take random int from spans to use as list length in this trial, then remove that element from spans//
-		//int spanIndice = rand.nextInt(spansList.size());
-		int thisTrialSpan = spansList.get(0);
-		spansList.remove(0);
+		//if not randomisedTrials then just take the first element in spansList //
+		//if randomisedTrials take random int from spans to use as list length in this trial, then remove that element from spans//
+		int thisTrialSpan = 99;
+		if (randomisedTrials == 0) {
+			thisTrialSpan = spansList.get(0);
+			spansList.remove(0);
+		} else if (randomisedTrials == 1) {
+			int index = rand.nextInt(spansList.size());
+			thisTrialSpan = spansList.get(index);
+			spansList.remove(index);
+		} else {
+			System.out.println("thisTrialSpan not set, check the behaviour of 'randomisedTrials' variable");
+			System.out.println("randomisedTrials value: " + randomisedTrials);
+		}
 		
 		switch(StimuliType){
 		case 1: //need digits to use as stimuli//
 			numbers = new int[thisTrialSpan];
 			List<Integer> numberList = new ArrayList<Integer>();
 			for (int i = 0; i < numbers.length; i++) {
-				int tmpNumber = 10 + rand.nextInt(90);
+				System.out.println("minDigit: " + minDigit);
+				System.out.println("maxDigit: " + maxDigit);
+				int tmpNumber = minDigit + rand.nextInt(maxDigit - minDigit); //numbers can be between minDigit and maxDigit
 				if (!numberList.contains(tmpNumber)) {
 					numbers[i] = tmpNumber;
 					numberList.add(tmpNumber);
@@ -538,5 +570,157 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 			}
 
 		}
+	}
+	
+	public ArrayList<Integer> generateSpanList() {
+		ArrayList<Integer> tmpList = new ArrayList<Integer>();
+		for (int j = 0; j < spanTwoTrials; j++) {
+			tmpList.add(2);
+		}
+		for (int j = 0; j < spanThreeTrials; j++) {
+			tmpList.add(3);
+		}
+		for (int j = 0; j < spanFourTrials; j++) {
+			tmpList.add(4);
+		}
+		for (int j = 0; j < spanFiveTrials; j++) {
+			tmpList.add(5);
+		}
+		for (int j = 0; j < spanSixTrials; j++) {
+			tmpList.add(6);
+		}
+		for (int j = 0; j < spanSevenTrials; j++) {
+			tmpList.add(7);
+		}
+		for (int j = 0; j < spanEightTrials; j++) {
+			tmpList.add(8);
+		}
+		for (int j = 0; j < spanNineTrials; j++) {
+			tmpList.add(9);
+		}
+		
+		return tmpList;
+	}
+	
+	public void setNumIterations() {
+		@SuppressWarnings("unchecked")
+		List<IteratedListSelector> ILSS = (List<IteratedListSelector>)(List<?>) ElementUtils.findHandlersInStackByType(getExecutionContext(), IteratedListSelector.class);
+		//how many iterations needed?
+		int iterationsRequired = 0;
+		//sum of spans list + size of spans list.
+		for (int i = 0; i < spansList.size(); i++) {
+			iterationsRequired += spansList.get(i);
+		}
+		iterationsRequired += spansList.size();
+		
+		//set the value
+		System.out.println("iterationsRequired: " + iterationsRequired);
+		ILSS.get(0).setNumIterations(iterationsRequired);
+	}
+
+	
+	//get-set methods to allow the xml to pass values to the executable//
+	public int getStimuliType() {
+		return StimuliType;
+	}
+	
+	public void setStimuliType(int StimuliType) {
+		this.StimuliType = StimuliType;
+	}
+	
+	public String getWordBankFileName() {
+		return WordBankFileName;
+	}
+	
+	public void setWordBankFileName(String WordBankFileName) {
+		this.WordBankFileName = WordBankFileName;
+	}
+	
+	public int getminDigit() {
+		return minDigit;
+	}
+	
+	public void setminDigit(int n) {
+		this.minDigit = n;
+	}
+	
+	public int getmaxDigit() {
+		return this.maxDigit;
+	}
+	
+	public void setmaxDigit(int n) {
+		this.maxDigit = n;
+	}
+	
+	public int getspanTwoTrials() {
+		return spanTwoTrials;
+	}
+	
+	public int getrandomisedTrials() {
+		return randomisedTrials;
+	}
+	
+	public void setrandomisedTrials(int n) {
+		this.randomisedTrials = n;
+	}
+	
+	public void setspanTwoTrials(int n) {
+		this.spanTwoTrials = n;
+	}
+	
+	public int getspanThreeTrials() {
+		return spanThreeTrials;
+	}
+	
+	public void setspanThreeTrials(int n) {
+		this.spanThreeTrials = n;
+	}
+	
+	public int getspanFourTrials() {
+		return spanFourTrials;
+	}
+	
+	public void setspanFourTrials(int n) {
+		this.spanFourTrials = n;
+	}
+	
+	public int getspanFiveTrials() {
+		return spanFiveTrials;
+	}
+	
+	public void setspanFiveTrials(int n) {
+		this.spanFiveTrials = n;
+	}
+	
+	public int getspanSixTrials() {
+		return spanSixTrials;
+	}
+	
+	public void setspanSixTrials(int n) {
+		this.spanSixTrials = n;
+	}
+	
+	public int getspanSevenTrials() {
+		return spanSevenTrials;
+	}
+	
+	public void setspanSevenTrials(int n) {
+		this.spanSevenTrials = n;
+	}
+	
+	public int getspanEightTrials() {
+		return spanEightTrials;
+	}
+	
+	public void setspanEightTrials(int n) {
+		this.spanEightTrials = n;
+	}
+	
+	public int getspanNineTrials() {
+		return spanNineTrials;
+	}
+	
+	public void setspanNineTrials(int n) {
+		this.spanNineTrials = n;
 	}
 }
