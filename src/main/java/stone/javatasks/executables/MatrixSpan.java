@@ -40,7 +40,6 @@ import ch.tatool.core.display.swing.status.StatusPanel;
 import ch.tatool.core.display.swing.status.StatusRegionUtil;
 import ch.tatool.core.element.ElementUtils;
 import ch.tatool.core.element.IteratedListSelector;
-import ch.tatool.core.element.handler.pause.PauseHandlerUtil;
 import ch.tatool.core.executable.BlockingAWTExecutable;
 import ch.tatool.data.DescriptivePropertyHolder;
 import ch.tatool.data.Property;
@@ -60,37 +59,50 @@ import ch.tatool.exec.ExecutionPhaseListener;
 public class MatrixSpan extends BlockingAWTExecutable implements DescriptivePropertyHolder, 
 		ExecutionPhaseListener {
 
-	Logger logger = LoggerFactory.getLogger(WordDigitSpan.class);
+	Logger logger = LoggerFactory.getLogger(MatrixSpan.class);
 	
 	private RegionsContainer regionsContainer;
 	
 	//phases of task//
+	private Phase currentPhase;		
 	public enum Phase {
 		INIT, MEMO, RECALL
 	}
-
-	private Phase currentPhase;	
 	
 	//properties of interest//
 	private IntegerProperty loadProperty = new IntegerProperty("load");
 	private IntegerProperty trialNoProperty = new IntegerProperty("trialNo");
+	private String current_user;
 	
+	//panels
 	private GridSpanStimulus thisTrialPanel; //this is a JPanel with the grid constructed//
 	private JPanel holdingPanel;
+	private JPanel recallPanel;
+	private JPanel tmpPanel;
 	
 	//timing
 	private Timer timer;
 	private TimerTask suspendExecutableTask;
-	private TimerTask startRecallTask;
+	private long startTime;
+	private long endTime;
 	private int displayDuration = 1000; //duration string should be displayed in ms//
 	
-	//stimuli
-	private int[] simpleSpans = {2,2,2,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6};
-	private int[] complexSpans = {2,2,2,2,2,2,3,3,3,4,4,4,5,5,5};
+	//trials
+	private int spanTwoTrials = 0; //default zero, if set in the xml then these will be replaced.
+	private int spanThreeTrials = 0;
+	private int spanFourTrials = 0;
+	private int spanFiveTrials = 0;
+	private int spanSixTrials = 0;
+	private int spanSevenTrials = 0;
+	private int spanEightTrials = 0;
+	private int spanNineTrials = 0;
+	//will then use these values to populate the spansList.
 	private ArrayList<Integer> spansList = new ArrayList<Integer>();
+	//should the list length be ordered presentation or randomised
+	private int randomisedTrials = 0; //default is 0 which is for in sequence, set to 1 in the XML for randomised order.	
+	
+	//stimuli
 	private ArrayList<Integer> stimuli;
-	private int complexSpan;
-	private String current_user;	
 	
 	private int trialCounter;
 	private int memCounter; //counts memoranda presented per trial//
@@ -98,51 +110,45 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 	private ArrayList<Integer> correctResponse; 
 	private ArrayList<Integer> givenResponse; 
 	
-	private long startTime;
-	private long endTime;
-	
+	//globals
+	private Dimension mainPanelSize;
+	private int gridPanelSize;
+	private int ScalingFactor = 75;
+	private int gridDimension = 4;
 	private Random rand;
-	
-	//buttons for recall
-	private JButton box_1 = new JButton();private JButton box_2 = new JButton();private JButton box_3 = new JButton();private JButton box_4 = new JButton();
-	private JButton box_5 = new JButton();private JButton box_6 = new JButton();private JButton box_7 = new JButton();private JButton box_8 = new JButton();
-	private JButton box_9 = new JButton();private JButton box_10 = new JButton();private JButton box_11 = new JButton();private JButton box_12 = new JButton();
-	private JButton box_13 = new JButton();private JButton box_14 = new JButton();private JButton box_15 = new JButton();private JButton box_16 = new JButton();
+	final Color fillColor = new Color(0,51,102);
 	private ArrayList<JButton> buttons;
-	private JPanel recallPanel;
-	private JPanel tmpPanel;
 	private recallButtonListener recallButtonListener = new recallButtonListener();
 	
-	final Color fillColor = new Color(0,51,102);
-	
+	/*
+	 * Constructor
+	 */
 	public MatrixSpan() {
 		
 		try
 		{
 			UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
 		} catch(Exception e)
-		{}
-		
-		thisTrialPanel = new GridSpanStimulus(4,400);
-		tmpPanel = new JPanel();
-		tmpPanel.setBorder(BorderFactory.createTitledBorder("Remember the sequence"));
-		tmpPanel.add(thisTrialPanel);
-		tmpPanel.setBackground(Color.WHITE);
-		tmpPanel.setPreferredSize(new Dimension(434,434));
-		tmpPanel.setMaximumSize(new Dimension(434,434));		
+		{}	
 		
 		rand = new Random();
 		timer = new Timer();
 	}
 	
-	//start method//
+	/*
+	 * Method called at the start of execution
+	 * (non-Javadoc)
+	 * @see ch.tatool.core.executable.BlockingAWTExecutable#startExecutionAWT()
+	 */
 	protected void startExecutionAWT() {
 		
+		//MetalLookAndFeel, I like to use JButtons as grids.//
 		try
 		{
 			UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
 		} catch(Exception e)
 		{}
+		
 		
 		//initialise environment//
 		ExecutionContext context = getExecutionContext();
@@ -150,6 +156,7 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		ContainerUtils.showRegionsContainer(display);
 		regionsContainer = ContainerUtils.getRegionsContainer();
 		
+		//add user info to the status panel//
 		current_user = context.getExecutionData().getModule().getUserAccount().getName();
 		StatusPanel customNamePanel = (StatusPanel) StatusRegionUtil.getStatusPanel("custom1");
 		customNamePanel.setProperty("title","User");
@@ -168,46 +175,80 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		}
 	}
 	
+	/*
+	 * Method that sets up a trial, populates the display with the objects needed, 
+	 * reset a few variables that are used to keep track of a trial, and generate 
+	 * the stimuli for this trial (which grids to show).
+	 */
 	private void startInitPhase() {
 		
-		holdingPanel = new JPanel();
-		holdingPanel.setPreferredSize(new Dimension(800,800));
+		holdingPanel = new JPanel(); //overall panel that will fill the screen (minus the status panel)//
 		holdingPanel.setBackground(Color.WHITE);
 		holdingPanel.setLayout(new BoxLayout(holdingPanel, BoxLayout.Y_AXIS));
 		holdingPanel.setBorder(BorderFactory.createTitledBorder("Remember the sequence"));
+		regionsContainer.setRegionContent(Region.CENTER, holdingPanel);
+		regionsContainer.setRegionContentVisibility(Region.CENTER, true);
+		refreshRegion(Region.CENTER);
+		mainPanelSize = holdingPanel.getSize(); //get dimension of panel so we can work out how big to make the grid//
+		mainPanelSize.height -= 100; //take 100 pixels off the height as a buffer//
+		mainPanelSize.height = (mainPanelSize.height / 100) * ScalingFactor;//use the scaling factor to reduce the size to the desired amount//
 		
+		if (mainPanelSize.height % gridDimension == 0) {
+			gridPanelSize = mainPanelSize.height;
+		} else {
+			gridPanelSize = mainPanelSize.height - (mainPanelSize.height % gridDimension);
+		}
+		
+		thisTrialPanel = new GridSpanStimulus(gridDimension,gridPanelSize); 
+		tmpPanel = new JPanel();
+		tmpPanel.setBorder(BorderFactory.createTitledBorder("Remember the sequence"));
+		tmpPanel.add(thisTrialPanel);
+		tmpPanel.setBackground(Color.WHITE);
+		int bufferedSize = gridPanelSize + 35;
+		tmpPanel.setPreferredSize(new Dimension(bufferedSize,bufferedSize));
+		tmpPanel.setMaximumSize(new Dimension(bufferedSize,bufferedSize));	
+		
+		//method that handles stimuli generation//
 		generateStimuli();
 		
-		//reset stim counter//
+		//reset counters and response containers//
 		memCounter = 0;
 		respCounter = 0;
-		
 		correctResponse = new ArrayList<Integer>();
 		givenResponse = new ArrayList<Integer>();
-		
 		Result.getResultProperty().setValue(this,null);
 		
-		//start memo phase//
+		//change to memo phase//
 		currentPhase = Phase.MEMO;
-		
+		//add tmpPanel to holdingPanel vertically centered//
 		holdingPanel.add(Box.createVerticalGlue());
 		holdingPanel.add(tmpPanel);
 		holdingPanel.add(Box.createVerticalGlue());
 		
+		refreshRegion(Region.CENTER);
+		
+		//start memo phase
 		startMemoPhase();
 	}	
 	
+	/*
+	 * Method that handles presenting stimuli
+	 */
 	private void startMemoPhase() {
 		
+		//change colour of grid that has been selected as this elements TBR item//
 		thisTrialPanel.fillButton(stimuli.get(memCounter), fillColor);
 
-		//suspend for specified amount of time, this is presentation time of each digit/word//
+		//create the suspendExec task, it is actually called further down by the timer, creates the 
+		//displayDuration delay we want (preesntation time). 
 		suspendExecutableTask = new TimerTask() {
 			public void run() {
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run() {
+						
 						thisTrialPanel.fillButton(stimuli.get(memCounter), Color.WHITE);
-						memCounter++; //incremement memCounter as an additional digit/word has been shown//
+						memCounter++; //incremement memCounter//
+						
 						//if this is is last stim then change to recall phase//
 						if (memCounter == stimuli.size()) {
 							currentPhase = Phase.RECALL;		
@@ -221,9 +262,15 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		
 		regionsContainer.setRegionContent(Region.CENTER, holdingPanel);
 		regionsContainer.setRegionContentVisibility(Region.CENTER, true);
+		//set the timer off that will run the suspendExecutableTask code when it runs out//
 		timer.schedule(suspendExecutableTask, displayDuration);				
 	}
 	
+	/*
+	 * Method to handle the recall phase of the task. Present the grid and allow the user to press 
+	 * them one at a time to give their response. Move on once the input number reaches the span size 
+	 * of the current trial.
+	 */
 	private void startRecallPhase() {
 		produceRecallGrid();
 		regionsContainer.setRegionContent(Region.CENTER, holdingPanel);
@@ -233,6 +280,9 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		regionsContainer.setRegionContentVisibility(Region.CENTER, true);		
 	}
 	
+	/**
+	 * called at the end of the trial, important for data logging.
+	 */
 	private void processProperties() {
 		System.out.println("spansList: " + spansList);
 		endTime = System.nanoTime();
@@ -270,7 +320,10 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		
 	}
 	
-	
+	/**
+	 * called at the very end of a trial, resets phase to INIT in case there are more trials to run, 
+	 * removes listeners from recall buttons, and terminates execution.
+	 */
 	private void endTask() {
 		currentPhase = Phase.INIT;
 		trialCounter++;
@@ -320,6 +373,10 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		}
 	}	
 	
+	/*
+	 * (non-Javadoc)
+	 * @see ch.tatool.core.executable.BlockingAWTExecutable#cancelExecutionAWT()
+	 */
 	protected void cancelExecutionAWT() {
 		timer.cancel();
 		currentPhase = Phase.INIT;
@@ -328,6 +385,9 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 	/**
 	 * Is called whenever we copy the properties from our executable to a trial
 	 * object for persistence with the help of the DataUtils class.
+	 * 
+	 * (non-Javadoc)
+	 * @see ch.tatool.data.DescriptivePropertyHolder#getPropertyObjects()
 	 */
 	public Property<?>[] getPropertyObjects() {
 		return new Property[] { Points.getMinPointsProperty(),
@@ -339,42 +399,38 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 				loadProperty, trialNoProperty };
 	}	
 	
-	
+	/**
+	 * randomly generates stimuli for the trial. If this is the first trial then it 
+	 * populates the spansList also. 
+	 */
 	private void generateStimuli() {
 		
 		//if first trial then generate trial spans
 		if (trialCounter == 0) {
 			//compile ArrayList for spans//
-			System.out.println("complexSpan: " + complexSpan);
-			System.out.println("trialCounter: " + trialCounter);
-			if (complexSpan == 1) {
-				for (int i = 0; i < complexSpans.length; i++) {
-					spansList.add(complexSpans[i]);
-				}			
-			} else if (complexSpan == 0) {
-				for (int i = 0; i < simpleSpans.length; i++) {
-					spansList.add(simpleSpans[i]);
-				}
-			}
-			System.out.println("spansList: " + spansList);			
+			spansList = generateSpanList();
+			setNumIterations();
 		}		
 		
-		
-		//need to get a span number
-		//then get a random set of ints between 0-15 with no repeats
-		//of the same length as the span.
-		/*
-		int spanIndice = rand.nextInt(spansList.size());
-		int thisTrialSpan = spansList.get(spanIndice);
-		spansList.remove(spanIndice);
-		*/
-		int thisTrialSpan = spansList.get(0);
-		spansList.remove(0);
+		//if not randomisedTrials then just take the first element in spansList //
+		//if randomisedTrials take random int from spans to use as list length in this trial, then remove that element from spans//
+		int thisTrialSpan = 99;
+		if (randomisedTrials == 0) {
+			thisTrialSpan = spansList.get(0);
+			spansList.remove(0);
+		} else if (randomisedTrials == 1) {
+			int index = rand.nextInt(spansList.size());
+			thisTrialSpan = spansList.get(index);
+			spansList.remove(index);
+		} else {
+			System.out.println("thisTrialSpan not set, check the behaviour of 'randomisedTrials' variable");
+			System.out.println("randomisedTrials value: " + randomisedTrials);
+		}
 		
 		stimuli = new ArrayList<Integer>();
 		
 		for (int i = 0; i < thisTrialSpan; i++) {
-			int genNum = rand.nextInt(16);
+			int genNum = rand.nextInt(gridDimension * gridDimension);
 			if (!stimuli.contains(genNum)) {
 				stimuli.add(genNum);
 			} else {
@@ -384,27 +440,26 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		
 	}
 	
+	/*
+	 * creates and displays the objects needed to collect responses.
+	 */
 	private void produceRecallGrid() {
 		//initialise the JButtons we need and add them to an arraylist//
 		buttons = new ArrayList<JButton>();
-		buttons.add(box_1);buttons.add(box_2);buttons.add(box_3);buttons.add(box_4);
-		buttons.add(box_5);buttons.add(box_6);buttons.add(box_7);buttons.add(box_8);
-		buttons.add(box_9);buttons.add(box_10);buttons.add(box_11);buttons.add(box_12);
-		buttons.add(box_13);buttons.add(box_14);buttons.add(box_15);buttons.add(box_16);
-		
-		//holdingPanel = new JPanel();
-		//holdingPanel.setPreferredSize(new Dimension(800,800));
-		//holdingPanel.setBackground(Color.WHITE);
+		for (int i = 0; i < (gridDimension * gridDimension); i++) {
+			buttons.add(new JButton());
+		}
 		
 		recallPanel = new JPanel();
-		recallPanel.setPreferredSize(new Dimension(444,444));
-		recallPanel.setMaximumSize(new Dimension(444,444));
+		recallPanel.setPreferredSize(new Dimension(gridPanelSize + 35,gridPanelSize + 35));
+		recallPanel.setMaximumSize(new Dimension(gridPanelSize + 35,gridPanelSize + 35));
 		recallPanel.setBackground(Color.WHITE);
 		recallPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
 		recallPanel.setBorder(BorderFactory.createTitledBorder("Click the boxes in the order you were shown"));
 		
+		
 		for (JButton item : buttons) {
-			item.setPreferredSize(new Dimension(100,100));
+			item.setPreferredSize(new Dimension((gridPanelSize / gridDimension),(gridPanelSize / gridDimension)));
 			item.setBackground(Color.WHITE);
 			recallPanel.add(item);
 			item.addActionListener(recallButtonListener);
@@ -417,23 +472,24 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		holdingPanel.add(Box.createVerticalGlue());
 	}
 	
+	/**
+	 * Listener class applied to the buttons during the recall phase. Deals with what the program 
+	 * should do when a response is given. 
+	 * 
+	 * @author James Stone
+	 *
+	 */
 	private class recallButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent event) {
-			//change its color
-			System.out.println("recallButtonListener in action...");
+			//change colour of clicked grid and disable it from being pressed again
 			JButton gridClicked = (JButton)(event.getSource());
 			gridClicked.setBackground(fillColor);
+			gridClicked.setEnabled(false);
 			givenResponse.add(buttons.indexOf(gridClicked));
-			
+			//increment respCounter
 			respCounter++;
-			System.out.println("respCounter: " + respCounter);
-			System.out.println("stimuli.size(): " + stimuli.size());
 			
-			//for debugging
-			List<IteratedListSelector> ILSS = (List<IteratedListSelector>)(List<?>) ElementUtils.findHandlersInStackByType(getExecutionContext(), IteratedListSelector.class);
-			System.out.println("executed iterations: " + ILSS.get(0).getExecutedIterations());
-			
-			
+			//check to see if respCounter is equal to span size of trial, if so - end it//
 			if (respCounter == stimuli.size()) {
 				regionsContainer.setRegionContentVisibility(Region.CENTER, false);
 				processProperties();
@@ -443,12 +499,163 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		}	
 	}
 	
-	public int getcomplexSpan() {
-		return this.complexSpan;
+	/*
+	 * quick method to refresh the display of a region
+	 */
+	private void refreshRegion(Region reg) {
+		regionsContainer.setRegionContentVisibility(reg, false);
+		holdingPanel.revalidate();
+		regionsContainer.setRegionContentVisibility(reg, true);
 	}
-	public void setcomplexSpan(int c) {
-		this.complexSpan = c;
+	
+	/*
+	 * the actual number of iterations is not the number of trials you want to run. Each iteration means every 
+	 * time this aprticularly executable should be called. In any one trial it is called more than once, it is 
+	 * called once for each memoranda display and once to run the recall phase for that trial. Therefore rather 
+	 * than have a user add this all up and set it in the XML where mistakes can be made, this method will take 
+	 * the span size trials asked for, calculate numIterations needed and reset the value. Only called at the 
+	 * start.
+	 */
+	public void setNumIterations() {
+		@SuppressWarnings("unchecked")
+		List<IteratedListSelector> ILSS = (List<IteratedListSelector>)(List<?>) ElementUtils.findHandlersInStackByType(getExecutionContext(), IteratedListSelector.class);
+		//how many iterations needed?
+		int iterationsRequired = 0;
+		//sum of spans list + size of spans list.
+		for (int i = 0; i < spansList.size(); i++) {
+			iterationsRequired += spansList.get(i);
+		}
+		iterationsRequired += spansList.size();
+		
+		//set the value
+		System.out.println("iterationsRequired: " + iterationsRequired);
+		ILSS.get(0).setNumIterations(iterationsRequired);
+	}	
+	
+	/*
+	 * helper method to populate the spansList based on XML input. 
+	 */
+	public ArrayList<Integer> generateSpanList() {
+		ArrayList<Integer> tmpList = new ArrayList<Integer>();
+		for (int j = 0; j < spanTwoTrials; j++) {
+			tmpList.add(2);
+		}
+		for (int j = 0; j < spanThreeTrials; j++) {
+			tmpList.add(3);
+		}
+		for (int j = 0; j < spanFourTrials; j++) {
+			tmpList.add(4);
+		}
+		for (int j = 0; j < spanFiveTrials; j++) {
+			tmpList.add(5);
+		}
+		for (int j = 0; j < spanSixTrials; j++) {
+			tmpList.add(6);
+		}
+		for (int j = 0; j < spanSevenTrials; j++) {
+			tmpList.add(7);
+		}
+		for (int j = 0; j < spanEightTrials; j++) {
+			tmpList.add(8);
+		}
+		for (int j = 0; j < spanNineTrials; j++) {
+			tmpList.add(9);
+		}
+		
+		return tmpList;
+	}	
+	
+	/**
+	 * 
+	 * getset methods to allow values to be set in the XML.
+	 */
+	
+	public int getgridDimension() {
+		return gridDimension;
 	}
-			
+	
+	public void setgridDimension(int n) {
+		this.gridDimension = n;
+	}
+	
+	public int getScalingFactor() {
+		return ScalingFactor;
+	}
+	
+	public void setScalingFactor(int n) {
+		this.ScalingFactor = n;
+	}
+	
+	public int getrandomisedTrials() {
+		return randomisedTrials;
+	}
+	
+	public void setrandomisedTrials(int n) {
+		this.randomisedTrials = n;
+	}
+	
+	public int getspanTwoTrials() {
+		return spanTwoTrials;
+	}
+	
+	public void setspanTwoTrials(int n) {
+		this.spanTwoTrials = n;
+	}
+	
+	public int getspanThreeTrials() {
+		return spanThreeTrials;
+	}
+	
+	public void setspanThreeTrials(int n) {
+		this.spanThreeTrials = n;
+	}
+	
+	public int getspanFourTrials() {
+		return spanFourTrials;
+	}
+	
+	public void setspanFourTrials(int n) {
+		this.spanFourTrials = n;
+	}
+	
+	public int getspanFiveTrials() {
+		return spanFiveTrials;
+	}
+	
+	public void setspanFiveTrials(int n) {
+		this.spanFiveTrials = n;
+	}
+	
+	public int getspanSixTrials() {
+		return spanSixTrials;
+	}
+	
+	public void setspanSixTrials(int n) {
+		this.spanSixTrials = n;
+	}
+	
+	public int getspanSevenTrials() {
+		return spanSevenTrials;
+	}
+	
+	public void setspanSevenTrials(int n) {
+		this.spanSevenTrials = n;
+	}
+	
+	public int getspanEightTrials() {
+		return spanEightTrials;
+	}
+	
+	public void setspanEightTrials(int n) {
+		this.spanEightTrials = n;
+	}
+	
+	public int getspanNineTrials() {
+		return spanNineTrials;
+	}
+	
+	public void setspanNineTrials(int n) {
+		this.spanNineTrials = n;
+	}	
 	
 }

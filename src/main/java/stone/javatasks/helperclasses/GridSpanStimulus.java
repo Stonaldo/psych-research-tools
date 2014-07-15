@@ -18,24 +18,6 @@ import javax.swing.JPanel;
 
 public class GridSpanStimulus extends JPanel {
 	
-	//enough buttons to go as far as an 8x8 grid//
-	private JButton box_1 = new JButton();private JButton box_2 = new JButton();private JButton box_3 = new JButton();private JButton box_4 = new JButton();
-	private JButton box_5 = new JButton();private JButton box_6 = new JButton();private JButton box_7 = new JButton();private JButton box_8 = new JButton();
-	private JButton box_9 = new JButton();private JButton box_10 = new JButton();private JButton box_11 = new JButton();private JButton box_12 = new JButton();
-	private JButton box_13 = new JButton();private JButton box_14 = new JButton();private JButton box_15 = new JButton();private JButton box_16 = new JButton();
-	private JButton box_17 = new JButton();private JButton box_18 = new JButton();private JButton box_19 = new JButton();private JButton box_20 = new JButton();
-	private JButton box_21 = new JButton();private JButton box_22 = new JButton();private JButton box_23 = new JButton();private JButton box_24 = new JButton();
-	private JButton box_25 = new JButton();private JButton box_26 = new JButton();private JButton box_27 = new JButton();private JButton box_28 = new JButton();
-	private JButton box_29 = new JButton();private JButton box_30 = new JButton();private JButton box_31 = new JButton();private JButton box_32 = new JButton();
-	private JButton box_33 = new JButton();private JButton box_34 = new JButton();private JButton box_35 = new JButton();private JButton box_36 = new JButton();
-	private JButton box_37 = new JButton();private JButton box_38 = new JButton();private JButton box_39 = new JButton();private JButton box_40 = new JButton();
-	private JButton box_41 = new JButton();private JButton box_42 = new JButton();private JButton box_43 = new JButton();private JButton box_44 = new JButton();
-	private JButton box_45 = new JButton();private JButton box_46 = new JButton();private JButton box_47 = new JButton();private JButton box_48 = new JButton();
-	private JButton box_49 = new JButton();private JButton box_50 = new JButton();private JButton box_51 = new JButton();private JButton box_52 = new JButton();
-	private JButton box_53 = new JButton();private JButton box_54 = new JButton();private JButton box_55 = new JButton();private JButton box_56 = new JButton();
-	private JButton box_57 = new JButton();private JButton box_58 = new JButton();private JButton box_59 = new JButton();private JButton box_60 = new JButton();
-	private JButton box_61 = new JButton();private JButton box_62 = new JButton();private JButton box_63 = new JButton();private JButton box_64 = new JButton();
-	
 	private ArrayList<JButton> buttons = new ArrayList<JButton>();
 	
 	/*constructor*/
@@ -49,35 +31,10 @@ public class GridSpanStimulus extends JPanel {
 		System.out.println(this.getLayout());
 		
 		//initialise the JButtons we need and add them to an arraylist//
-		buttons.add(box_1);buttons.add(box_2);buttons.add(box_3);buttons.add(box_4);
-		buttons.add(box_5);buttons.add(box_6);buttons.add(box_7);buttons.add(box_8);
-		buttons.add(box_9);
-		//if num_boxes is > 3 then we need at least 16 buttons//
-		if (num_boxes > 3) {
-			buttons.add(box_10);buttons.add(box_11);buttons.add(box_12);buttons.add(box_13);
-			buttons.add(box_14);buttons.add(box_15);buttons.add(box_16);
+		for (int i = 0; i < (num_boxes * num_boxes); i++) {
+			buttons.add(new JButton());
 		}
-		if(num_boxes > 4) {
-			buttons.add(box_17);buttons.add(box_18);buttons.add(box_19);buttons.add(box_20);
-			buttons.add(box_21);buttons.add(box_22);buttons.add(box_23);buttons.add(box_24);buttons.add(box_25);
-		}
-		if(num_boxes > 5) {
-			buttons.add(box_26);buttons.add(box_27);buttons.add(box_28);buttons.add(box_29);
-			buttons.add(box_30);buttons.add(box_31);buttons.add(box_32);buttons.add(box_33);
-			buttons.add(box_34);buttons.add(box_35);buttons.add(box_36);
-		}
-		if(num_boxes > 6) {
-			buttons.add(box_37);buttons.add(box_38);buttons.add(box_39);buttons.add(box_40);
-			buttons.add(box_41);buttons.add(box_42);buttons.add(box_43);buttons.add(box_44);
-			buttons.add(box_45);buttons.add(box_46);buttons.add(box_47);buttons.add(box_48);
-			buttons.add(box_49);
-		}
-		if(num_boxes > 7) {
-			buttons.add(box_50);buttons.add(box_51);buttons.add(box_52);buttons.add(box_53);
-			buttons.add(box_54);buttons.add(box_55);buttons.add(box_56);buttons.add(box_57);
-			buttons.add(box_58);buttons.add(box_59);buttons.add(box_60);buttons.add(box_61);
-			buttons.add(box_62);buttons.add(box_63);buttons.add(box_64);
-		}
+
 		
 		//construct and set values for buttons//
 		
@@ -87,14 +44,18 @@ public class GridSpanStimulus extends JPanel {
 			this.add(item);
 		}
 		
-		makeActive(false);
+		enableAllButtons(false);
 		
 	}
 	
-	public void makeActive(boolean b) {
+	public void enableAllButtons(boolean b) {
 		for (JButton item : buttons) {
 			item.setEnabled(b);
 		}
+	}
+	
+	public void enableSingleButton(boolean b, int buttonToAffect) {
+		buttons.get(buttonToAffect).setEnabled(b);
 	}
 	
 	public void fillButton(int f, Color c) {
