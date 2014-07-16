@@ -118,6 +118,13 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 	private int givenResponseDigits; //if digit span//
 	private String givenResponseWord; //if word span//
 	
+	/*
+	 * need an indicator as to whether this executable is being used to run a simple span task 
+	 * or complex span tasks as the behaviour required can be slightly different for certain things.
+	 */
+	private int ComplexSpan = 0; //"0" by default, this will be the code for simple span, "1" if complex.//
+	
+	
 	private long startTime;
 	private long endTime;
 	
@@ -515,11 +522,7 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		//if first trial then generate trial spans and set executable iterations
 		if (trialCounter == 0) {
 			//compile ArrayList for spans//
-			System.out.println("trialCounter: " + trialCounter);
-			System.out.println("stimuliType: " + StimuliType);
-			
 			spansList = generateSpanList();
-			
 			System.out.println("spansList: " + spansList);
 			setNumIterations();
 		}
@@ -607,15 +610,27 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		List<IteratedListSelector> ILSS = (List<IteratedListSelector>)(List<?>) ElementUtils.findHandlersInStackByType(getExecutionContext(), IteratedListSelector.class);
 		//how many iterations needed?
 		int iterationsRequired = 0;
-		//sum of spans list + size of spans list.
-		for (int i = 0; i < spansList.size(); i++) {
-			iterationsRequired += spansList.get(i);
+		
+		if (ComplexSpan == 0) {
+			//sum of spans list + size of spans list.
+			for (int i = 0; i < spansList.size(); i++) {
+				iterationsRequired += spansList.get(i);
+			}
+			iterationsRequired += spansList.size();		
+		} else if (ComplexSpan == 1) {
+			iterationsRequired = spansList.size();
 		}
-		iterationsRequired += spansList.size();
+
 		
 		//set the value
 		System.out.println("iterationsRequired: " + iterationsRequired);
-		ILSS.get(0).setNumIterations(iterationsRequired);
+		if (iterationsRequired > 0) {
+			ILSS.get(0).setNumIterations(iterationsRequired);
+		} else {
+			System.out.println("Problem with setting number of iterations. Check ComplexSpan value");
+			System.out.println("Complex Span value: " + ComplexSpan);
+		}
+		
 	}
 
 	
@@ -636,6 +651,14 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		this.WordBankFileName = WordBankFileName;
 	}
 	
+	public int getComplexSpan() {
+		return ComplexSpan;
+	}
+	
+	public void setComplexSpan(int n) {
+		this.ComplexSpan = n;
+	}
+	
 	public int getminDigit() {
 		return minDigit;
 	}
@@ -652,16 +675,16 @@ public class WordDigitSpan extends BlockingAWTExecutable implements
 		this.maxDigit = n;
 	}
 	
-	public int getspanTwoTrials() {
-		return spanTwoTrials;
-	}
-	
 	public int getrandomisedTrials() {
 		return randomisedTrials;
 	}
 	
 	public void setrandomisedTrials(int n) {
 		this.randomisedTrials = n;
+	}
+	
+	public int getspanTwoTrials() {
+		return spanTwoTrials;
 	}
 	
 	public void setspanTwoTrials(int n) {

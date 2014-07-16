@@ -32,7 +32,8 @@ import ch.tatool.exec.ExecutionContext;
 import ch.tatool.exec.ExecutionOutcome;
 
 
-/**Displays a mathematical operation on screen and asks the user to indicate if the 
+/**
+ * Displays a mathematical operation on screen and asks the user to indicate if the 
  * answer given is correct or false. Can be used as a processing element to WM tasks.
  * @author James Stone
  */
@@ -46,8 +47,7 @@ public class OperationProcessingTask extends BlockingAWTExecutable implements
 	private CenteredTextPanel operationPanel; //for displaying operation//
 	private KeyActionPanel actionPanel; //for displaying options and collecting responses//
 	
-	//stimuli variables//
-	private int itemno = 0;
+	//variables//
 	private String equation = "";
 	private boolean correctEquation; //should the generated equation be correct or incorrect?//
 	private int correctResponse;
@@ -55,23 +55,13 @@ public class OperationProcessingTask extends BlockingAWTExecutable implements
 	private long startTime;
 	private long endTime;
 	private Random rand;
-	
 	final Font treb = new Font("Trebuchet MS", 1, 26);
 	final Color fontColor = new Color(0,51,102);
-	
-	/*variables controlling timer. If no answer given within a certain 
-	 * time then execution moves on. Depends on methodology as to whether 
-	 * this would be required. If not required, then comment out these 
-	 * variables and all other timer related code below (will be noted)
-	 */
-	/*private Timer timer;
-	private TimerTask taskEnd;
-	private int taskDuration = 10000; //time limit for giving an answer (in ms)//
-	*/
-	
 	private RegionsContainer regionsContainer;
 	
-	//init constructor//
+	/**
+	 * Constructor - set some properties. 
+	 */
 	public OperationProcessingTask() {
 		operationPanel = new CenteredTextPanel();
 		operationPanel.setTextFont(treb);
@@ -82,6 +72,9 @@ public class OperationProcessingTask extends BlockingAWTExecutable implements
 		rand = new Random();
 	}
 	
+	/**
+	 * Method called at start ofexecution. 
+	 */
 	protected void startExecutionAWT() {
 		ExecutionContext context = getExecutionContext();
 		SwingExecutionDisplay display = ExecutionDisplayUtils.getDisplay(context);
@@ -90,7 +83,7 @@ public class OperationProcessingTask extends BlockingAWTExecutable implements
 		
 		String equation = generateEquation(); //call the generateEquation method and set the result to variable 'equation'//
 		
-		operationPanel.setTextSize(120);
+		operationPanel.setTextSize(120); //consider setting this from XML//
 		operationPanel.setText(equation);	
 		
 		actionPanel.addKey(KeyEvent.VK_LEFT, "Correct", 1);
@@ -104,31 +97,12 @@ public class OperationProcessingTask extends BlockingAWTExecutable implements
 		
 		regionsContainer.setRegionContentVisibility(Region.CENTER, true);
 		regionsContainer.setRegionContentVisibility(Region.SOUTH, true);
-		actionPanel.enableActionPanel(); 
-		
-		/*At this point the equation is displayed and the action panel has been 
-		 * configured and enabled to allow the participant to respond. There is code
-		 * to move execution along when an answer is given within the action handler.
-		 * Alternatively the timer will be used to continue the program if no response 
-		 * is given after the set duration.
-		 * 
-		 */
-		/*
-		taskEnd = new TimerTask() {
-			public void run() {
-				SwingUtilities.invokeLater(new Runnable() {
-					public void run() {
-						endTask();
-					}
-				});
-			}
-		};
-		
-		timer.schedule(taskEnd, taskDuration);
-		*/
+		actionPanel.enableActionPanel(); //once this is enabled the program is now stalled until input is received//
 	}
 	
-	//Generate an operation to use as stimulus//
+	/*
+	 * Generates an operation to use as stimulus
+	 */
 	private String generateEquation() {
 		givenResponse = 3;
 		char operator = 0;
@@ -196,11 +170,12 @@ public class OperationProcessingTask extends BlockingAWTExecutable implements
 		
 		equation = String.valueOf(operand1) + operator + String.valueOf(operand2) + '=' + result;
 		
-		itemno = itemno + 1;
-		
 		return equation;
 	}
 	
+	/**
+	 * called when the action panel receives input, one of the keys specified. Records response and time taken//
+	 */
 	public void actionTriggered(ActionPanel source, Object actionValue) {
 		actionPanel.disableActionPanel();
 		
@@ -209,6 +184,7 @@ public class OperationProcessingTask extends BlockingAWTExecutable implements
 		regionsContainer.removeRegionContent(Region.CENTER);
 		regionsContainer.removeRegionContent(Region.SOUTH);
 		
+		//set end time properties to log how long it took to respond to operation//
 		endTime = System.nanoTime();
 		Timing.getEndTimeProperty().setValue(this, new Date());
 		
@@ -216,7 +192,9 @@ public class OperationProcessingTask extends BlockingAWTExecutable implements
 		
 		endTask();
 	}
-	
+	/**
+	 * ends the execution
+	 */
 	private void endTask() {
 		regionsContainer.setRegionContentVisibility(Region.CENTER, false);
 		regionsContainer.setRegionContentVisibility(Region.SOUTH, false);

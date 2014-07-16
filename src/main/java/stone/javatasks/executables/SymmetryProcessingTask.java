@@ -36,12 +36,12 @@ import ch.tatool.data.Trial;
 import ch.tatool.exec.ExecutionContext;
 import ch.tatool.exec.ExecutionOutcome;
 
-/** Displays a 8x8 grid with a pattern fill.
+/** 
+ * Displays a grid with a pattern fill.
  * Participant must make a judgement on whether or not the pattern
  * is symmetrical.
  * 
  * @author James Stone
- *
  */
 
 public class SymmetryProcessingTask extends BlockingAWTExecutable implements 
@@ -54,44 +54,54 @@ public class SymmetryProcessingTask extends BlockingAWTExecutable implements
 	private JPanel holdingPanel;
 	private KeyActionPanel actionPanel; //for displaying options and collecting responses//	
 	
-	//stimuli variables//
-	private int itemno = 0;
+	//variables//
 	private boolean correctAnswer; //should the generated pattern be symmetrical or not?//
 	private int correctResponse;
 	private int givenResponse;
 	private long startTime;
 	private long endTime;
 	private Random rand;
-	private int minimumSquaresToFill = 0; //overwritten by XML value//
-	private int maximumSquaresToFill = 0; //overwritten by XML value//
-	private int gridSize = 0; //overwritten by XML //
+	private int gridPanelSize;
+	
+	
+	//customisable vars from XML//
+	private int MinSquares = 0;
+	private int MaxSquares = 0;
+	private int ScalingFactor = 100;
+	private int GridDimension = 8;
 	
 	private RegionsContainer regionsContainer;	
 	
 	
-	//init constructor//
+	/**
+	 * Constructor for symmetry processing task
+	 */
 	public SymmetryProcessingTask() {
 		actionPanel = new KeyActionPanel();
 		actionPanel.addActionPanelListener(this);
 		rand = new Random();
 	}
 	
+	/**
+	 * Method called at start of each execution
+	 */
 	protected void startExecutionAWT() {
-		
+
 		try
 		{
 			UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
 		} catch(Exception e)
 		{}
 				
-		
 		ExecutionContext context = getExecutionContext();
 		SwingExecutionDisplay display = ExecutionDisplayUtils.getDisplay(context);
 		ContainerUtils.showRegionsContainer(display);
 		regionsContainer = ContainerUtils.getRegionsContainer();
 		
-		generateGrid(); //call the generateGrid method which will fill symmetryPanel with a pattern//	
+		//call the generateGrid method which will fill symmetryPanel with a pattern//
+		generateGrid(); 	
 		
+		//tell the action panel what keys to look for and what each one represents//
 		actionPanel.addKey(KeyEvent.VK_LEFT, "Symmetrical", 1);
 		actionPanel.addKey(KeyEvent.VK_RIGHT, "Non-Symmetrical", 0);
 		
@@ -106,26 +116,45 @@ public class SymmetryProcessingTask extends BlockingAWTExecutable implements
 		actionPanel.enableActionPanel(); 
 	}
 	
+	/**
+	 * Generate the grid and pattern to be displayed for this instance of the symmetry 
+	 * processing task
+	 */
 	private void generateGrid() {
 		holdingPanel = new JPanel();
-		holdingPanel.setPreferredSize(new Dimension(800,800));
 		holdingPanel.setBackground(Color.WHITE);
 		holdingPanel.setLayout(new BoxLayout(holdingPanel, BoxLayout.Y_AXIS));
-		symmetryPanel = new GridSpanStimulus(8, gridSize);
+		regionsContainer.setRegionContent(Region.CENTER, holdingPanel);
+		regionsContainer.setRegionContentVisibility(Region.CENTER, true);
+		refreshRegion(Region.CENTER);
+		
+		Dimension mainPanelSize = holdingPanel.getSize(); //get dimension of panel so we can work out how big to make the grid//
+		mainPanelSize.height -= 100; //take 100 pixels off the height as a buffer//
+		mainPanelSize.height = (mainPanelSize.height / 100) * ScalingFactor;//use the scaling factor to reduce the size to the desired amount//
+		
+		if (mainPanelSize.height % GridDimension == 0) {
+			gridPanelSize = mainPanelSize.height;
+		} else {
+			gridPanelSize = mainPanelSize.height - (mainPanelSize.height % GridDimension);
+		}		
+		
+		symmetryPanel = new GridSpanStimulus(GridDimension, gridPanelSize);
+		
 		//should it be symmetrical?//
 		correctAnswer = rand.nextInt(2) == 1; //if evaluates to true then display symmetrical else non-symm//
 		if (correctAnswer) {correctResponse = 1;} else {correctResponse = 0;}
 		//how many grids to fill?//
-		int numberOfSquaresToFill = rand.nextInt(maximumSquaresToFill - minimumSquaresToFill) + minimumSquaresToFill + 1;
+		int numberOfSquaresToFill = rand.nextInt((MaxSquares - MinSquares) + 1) + MinSquares;
 		
 		holdingPanel.add(Box.createVerticalGlue());
 		holdingPanel.add(symmetryPanel);
 		holdingPanel.add(Box.createVerticalGlue());
 		symmetryPanel.fillListButtons(symmetryPanel.getPattern(correctAnswer, numberOfSquaresToFill), Color.BLACK);
-		
-		itemno++;
 	}
 	
+	/**
+	 * Called when in put is received to the action panel
+	 */
 	public void actionTriggered(ActionPanel source, Object actionValue) {
 		actionPanel.disableActionPanel();
 		
@@ -142,6 +171,9 @@ public class SymmetryProcessingTask extends BlockingAWTExecutable implements
 		endTask();
 	}
 	
+	/**
+	 * ends the execution
+	 */
 	private void endTask() {
 		regionsContainer.setRegionContentVisibility(Region.CENTER, false);
 		regionsContainer.setRegionContentVisibility(Region.SOUTH, false);
@@ -194,33 +226,54 @@ public class SymmetryProcessingTask extends BlockingAWTExecutable implements
 				Timing.getDurationTimeProperty(), Misc.getOutcomeProperty() };
 	}
 	
+	/**
+	 * 
+	 */
 	protected void cancelExecutionAWT() {
 		//timer.cancel();
     }
 	
+
+	/**
+	 * Quick method to refresh the display of a region
+	 * @param reg The region to refresh
+	 */
 	private void refreshRegion(Region reg) {
 		regionsContainer.setRegionContentVisibility(reg, false);
 		holdingPanel.revalidate();
 		regionsContainer.setRegionContentVisibility(reg, true);
 	}
 
-	public int getminimumSquaresToFill() {
-		return this.minimumSquaresToFill;
+	/**
+	 * 
+	 * getset methods to allow values to be set in the XML.
+	 */
+	
+	public int getMinSquares() {
+		return this.MinSquares;
 	}
-	public void setminimumSquaresToFill(int n) {
-		this.minimumSquaresToFill = n;
+	public void setMinSquares(int n) {
+		this.MinSquares = n;
 	}
-	public int getmaximumSquaresToFill() {
-		return this.maximumSquaresToFill;
+	public int getMaxSquares() {
+		return this.MaxSquares;
 	}
-	public void setmaximumSquaresToFill(int n) {
-		this.maximumSquaresToFill = n;
+	public void setMaxSquares(int n) {
+		this.MaxSquares = n;
 	}
-	public int getgridSize() {
-		return this.gridSize;
+	public int getGridDimension() {
+		return this.GridDimension;
 	}
-	public void setgridSize(int n) {
-		this.gridSize = n;
+	public void setGridDimension(int n) {
+		this.GridDimension = n;
+	}
+	
+	public int getScalingFactor() {
+		return ScalingFactor;
+	}
+	
+	public void setScalingFactor(int n) {
+		this.ScalingFactor = n;
 	}
 }
 

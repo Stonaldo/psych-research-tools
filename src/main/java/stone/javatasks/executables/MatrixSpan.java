@@ -111,7 +111,6 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 	private ArrayList<Integer> givenResponse; 
 	
 	//globals
-	private Dimension mainPanelSize;
 	private int gridPanelSize;
 	private int ScalingFactor = 75;
 	private int gridDimension = 4;
@@ -119,6 +118,12 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 	final Color fillColor = new Color(0,51,102);
 	private ArrayList<JButton> buttons;
 	private recallButtonListener recallButtonListener = new recallButtonListener();
+	
+	/*
+	 * need an indicator as to whether this executable is being used to run a simple span task 
+	 * or complex span tasks as the behaviour required can be slightly different for certain things.
+	 */
+	private int ComplexSpan = 0; //"0" by default, this will be the code for simple span, "1" if complex.//
 	
 	/*
 	 * Constructor
@@ -189,7 +194,7 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		regionsContainer.setRegionContent(Region.CENTER, holdingPanel);
 		regionsContainer.setRegionContentVisibility(Region.CENTER, true);
 		refreshRegion(Region.CENTER);
-		mainPanelSize = holdingPanel.getSize(); //get dimension of panel so we can work out how big to make the grid//
+		Dimension mainPanelSize = holdingPanel.getSize(); //get dimension of panel so we can work out how big to make the grid//
 		mainPanelSize.height -= 100; //take 100 pixels off the height as a buffer//
 		mainPanelSize.height = (mainPanelSize.height / 100) * ScalingFactor;//use the scaling factor to reduce the size to the desired amount//
 		
@@ -521,11 +526,16 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 		List<IteratedListSelector> ILSS = (List<IteratedListSelector>)(List<?>) ElementUtils.findHandlersInStackByType(getExecutionContext(), IteratedListSelector.class);
 		//how many iterations needed?
 		int iterationsRequired = 0;
-		//sum of spans list + size of spans list.
-		for (int i = 0; i < spansList.size(); i++) {
-			iterationsRequired += spansList.get(i);
+		
+		if (ComplexSpan == 0) {
+			//sum of spans list + size of spans list.
+			for (int i = 0; i < spansList.size(); i++) {
+				iterationsRequired += spansList.get(i);
+			}
+			iterationsRequired += spansList.size();		
+		} else if (ComplexSpan == 1) {
+			iterationsRequired = spansList.size();
 		}
-		iterationsRequired += spansList.size();
 		
 		//set the value
 		System.out.println("iterationsRequired: " + iterationsRequired);
@@ -569,6 +579,14 @@ public class MatrixSpan extends BlockingAWTExecutable implements DescriptiveProp
 	 * 
 	 * getset methods to allow values to be set in the XML.
 	 */
+	
+	public int getComplexSpan() {
+		return ComplexSpan;
+	}
+	
+	public void setComplexSpan(int n) {
+		this.ComplexSpan = n;
+	}	
 	
 	public int getgridDimension() {
 		return gridDimension;
