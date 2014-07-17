@@ -67,18 +67,20 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 	public enum Phase {
 		INIT, MEMO, RECALL
 	}
-
 	private Phase currentPhase;	
 	
 	//properties of interest//
 	private IntegerProperty loadProperty = new IntegerProperty("load");
 	private IntegerProperty trialNoProperty = new IntegerProperty("trialNo");
 	
+	//panels//
 	private CenteredTextPanel imagePanel;
 	private JPanel recallReminderPanel; //stick in region.SOUTH to display answer given on the fly //
 	private JPanel holderPanel;
 	private JPanel recallPanel;
 	private JPanel textPanel;
+	private ArrayList<JPanel> blankPanels;
+	private JPanel inputPromptPanel;
 	private recallPanelHandler recallPanelHandler = new recallPanelHandler();
 	private Dimension thisScreenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
 	
@@ -88,12 +90,21 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 	//timing
 	private Timer timer;
 	private TimerTask suspendExecutableTask;
-	private TimerTask startRecallTask;
-	private int displayDuration = 1000; //duration string should be displayed in ms//	
+	private int displayDuration = 1000; //duration string should be displayed in ms//
+	private long startTime;
+	private long endTime;
 	
-	//stimuli
-	private int[] spans = {2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7}; //what span sizes do you want to run?//
+	//stimuli/trials
 	private ArrayList<Integer> spansList = new ArrayList<Integer>();
+	private int spanTwoTrials = 0; //default zero, if set in the xml then these will be replaced.
+	private int spanThreeTrials = 0;
+	private int spanFourTrials = 0;
+	private int spanFiveTrials = 0;
+	private int spanSixTrials = 0;
+	private int spanSevenTrials = 0;
+	private int spanEightTrials = 0;
+	private int spanNineTrials = 0;
+	private int randomisedTrials = 0; //default is 0 which is for in sequence, set to 1 in the XML for randomised order.
 	private ArrayList<Integer> stimuliLengths;
 	private ArrayList<Integer> stimuliDegrees;
 	private ImageIcon arrowLong;
@@ -102,77 +113,62 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 	private ImageIcon arrowShort45;
 	private RotatedIcon thisTrialIcon;
 	
-	private int trialCounter;
+	//variables//
+	private int trialCounter = 0;
 	private int memCounter; //counts memoranda presented per trial//
 	private int respCounter; //counts responses given//
 	private ArrayList<Integer> correctResponse; 
 	private ArrayList<Integer> givenResponse;
 	private ArrayList<Integer> givenDegrees;
 	private ArrayList<Integer> givenLengths;
-	
-	private ArrayList<JPanel> blankPanels;
-	private JPanel inputPromptPanel;
-	
-	private long startTime;
-	private long endTime;
-	
 	private int[] degrees = {0,45,90,135,180,225,270,315};
-	
 	private Random rand;
 	final Font textFont = new Font("Source Code Pro", 1, 24);
 	private String current_user;
 	//private Color recallBG = new Color(253,249,249);
 	
+	
+	/**
+	 * Constructor for the ArrowSpan executable. 
+	 */
 	public ArrowSpan() {
 		rand = new Random();
 		timer = new Timer();
 		imagePanel = new CenteredTextPanel();
 		recallReminderPanel = new JPanel();
 		holderPanel = new JPanel();
-
+		
+		//load base icons for use later//
 		arrowShort = new ImageIcon(getClass().getResource("/stimuli/imgs/arrows/UP_SHORT_NEW.png"));
 		arrowLong = new ImageIcon(getClass().getResource("/stimuli/imgs/arrows/UP_LONG_NEW.png"));
 		arrowShort45 = new ImageIcon(getClass().getResource("/stimuli/imgs/arrows/UP_SHORT_NEW_45.png"));
 		arrowLong45 = new ImageIcon(getClass().getResource("/stimuli/imgs/arrows/UP_LONG_NEW_45.png"));
 		
-		//compile ArrayList for spans//
-		for (int i = 0; i < spans.length; i++) {
-			spansList.add(spans[i]);
-		}
-		
-		//
 		recallReminderPanel.setBackground(Color.LIGHT_GRAY);
 		holderPanel.setBackground(Color.WHITE);
-		
-		//blank panels
-		JPanel blank1 = new JPanel();
-		JPanel blank2 = new JPanel(); 
-		JPanel blank3 = new JPanel(); 
-		JPanel blank4 = new JPanel(); 
-		JPanel blank5 = new JPanel(); 
-		JPanel blank6 = new JPanel();
-		JPanel blank7 = new JPanel();
 		inputPromptPanel = new JPanel();
 		JLabel inputPromptText = new JLabel("Input: ");
 		
+		//blank panels
 		blankPanels = new ArrayList<JPanel>();
+		inputPromptText.setFont(textFont);
+		inputPromptPanel.setBackground(Color.LIGHT_GRAY);
+		inputPromptPanel.add(inputPromptText);
 		
-		blankPanels.add(blank1);blankPanels.add(blank2);blankPanels.add(blank3);
-		blankPanels.add(blank4);blankPanels.add(blank5);blankPanels.add(blank6);
-		blankPanels.add(blank7);
-		
+		for (int i = 0; i < 9; i++) {
+			blankPanels.add(new JPanel());
+		}
+	
 		for (JPanel p : blankPanels) {
 			p.setPreferredSize(new Dimension(100,100));
 			p.setBackground(Color.WHITE);
 		}
 		
-		inputPromptText.setFont(textFont);
-		inputPromptPanel.setBackground(Color.LIGHT_GRAY);
-		inputPromptPanel.add(inputPromptText);
-		
 	}
 	
-	//start method//
+	/**
+	 * Method called at start of execution
+	 */
 	protected void startExecutionAWT() {
 		
 		//initialise environment//
@@ -181,10 +177,15 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		ContainerUtils.showRegionsContainer(display);
 		regionsContainer = ContainerUtils.getRegionsContainer();
 		
-		current_user = context.getExecutionData().getModule().getUserAccount().getName();
-		StatusPanel customNamePanel = (StatusPanel) StatusRegionUtil.getStatusPanel("custom1");
-		customNamePanel.setProperty("title","User");
-		customNamePanel.setProperty("value", current_user);
+		if (trialCounter == 0) {
+			current_user = context.getExecutionData().getModule().getUserAccount().getName();
+			StatusPanel customNamePanel = (StatusPanel) StatusRegionUtil.getStatusPanel("custom1");
+			customNamePanel.setProperty("title","User");
+			customNamePanel.setProperty("value", current_user);		
+			
+			//compile ArrayList for spans//
+			spansList = generateSpanList();
+		}
 		
 		regionsContainer.setRegionContent(Region.SOUTH, recallReminderPanel);
 		regionsContainer.setRegionContentVisibility(Region.SOUTH, true);
@@ -202,8 +203,12 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		}
 	}	
 	
+	/**
+	 * Method that handles setting up a trial
+	 */
 	private void startInitPhase() {
 		
+		//reset arrays//
 		correctResponse = new ArrayList<Integer>();
 		givenResponse = new ArrayList<Integer>();
 		givenDegrees = new ArrayList<Integer>();
@@ -211,6 +216,7 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		stimuliLengths = new ArrayList<Integer>();
 		stimuliDegrees = new ArrayList<Integer>();
 
+		//generate stimuli for the trial
 		generateStimuli();
 		
 		//reset stim counter//
@@ -224,23 +230,26 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		startMemoPhase();
 	}
 	
+	/**
+	 * Method that handles displaying the memoranda to participants
+	 */
 	private void startMemoPhase() {
 		
 		PauseHandlerUtil.setCurrentInterElementPauseDuration(getExecutionContext(), 1000);
 		
+		//set the icon as determined by the stimuli selected//
 		setThisTrialIcon();
-		
 		imagePanel.setIcon(thisTrialIcon);
 		
-		memCounter++; //incremement memCounter as an additional digit/word has been shown//
+		//incremement memCounter
+		memCounter++; 
 		
 		//if this is is last stim then change to recall phase//
-		
 		if (memCounter == stimuliLengths.size()) {
 			currentPhase = Phase.RECALL;
 		}
 		
-		//suspend for specified amount of time, this is presentation time of each digit/word//
+		//suspend for specified amount of time//
 		suspendExecutableTask = new TimerTask() {
 			public void run() {
 				SwingUtilities.invokeLater(new Runnable() {
@@ -256,7 +265,9 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		timer.schedule(suspendExecutableTask, displayDuration);		
 	}
 	
-	
+	/**
+	 * Method handles the recall phase
+	 */
 	private void startRecallPhase() {
 		PauseHandlerUtil.setCurrentInterElementPauseDuration(getExecutionContext(), 250);
 		generateRecallPanel();
@@ -269,12 +280,25 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		regionsContainer.setRegionContentVisibility(Region.CENTER, true);		
 	}	
 
+	/**
+	 * generate stimuli
+	 */
 	private void generateStimuli() {
 		
-		//take random int from spans to use as list length in this trial, then remove that element from spans//
-		//int spanIndice = rand.nextInt(spansList.size());
-		int thisTrialSpan = spansList.get(0);
-		spansList.remove(0);		
+		//if not randomisedTrials then just take the first element in spansList //
+		//if randomisedTrials take random int from spans to use as list length in this trial, then remove that element from spans//
+		int thisTrialSpan = 99;
+		if (randomisedTrials == 0) {
+			thisTrialSpan = spansList.get(0);
+			spansList.remove(0);
+		} else if (randomisedTrials == 1) {
+			int index = rand.nextInt(spansList.size());
+			thisTrialSpan = spansList.get(index);
+			spansList.remove(index);
+		} else {
+			System.out.println("thisTrialSpan not set, check the behaviour of 'randomisedTrials' variable");
+			System.out.println("randomisedTrials value: " + randomisedTrials);
+		}	
 
 		for (int j = 0; j < thisTrialSpan; j++) {
 			//generate random int of 0 or 1 that will determine the length of the arrow 0=short 1=long
@@ -300,6 +324,9 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 
 	}
 	
+	/**
+	 * helper method, sets thisTrialIcon to the appropriate image. 
+	 */
 	private void setThisTrialIcon() {
 		//get the degree of rotation for this item as decided by initialisation of stims
 		int thisItemRotation = stimuliDegrees.get(memCounter);
@@ -326,7 +353,9 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		}
 	}
 	
-	
+	/**
+	 * generate the recall panel for users to input their response
+	 */
 	private void generateRecallPanel() {
 		textPanel = new JPanel();
 		textPanel.setPreferredSize(new Dimension(thisScreenSize.width,215));
@@ -385,6 +414,9 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		
 	}
 	
+	/**
+	 * 
+	 */
 	public void processExecutionPhase(ExecutionContext context) {
 		if (context.getPhase().equals(ExecutionPhase.SESSION_START)) {
 			currentPhase = Phase.INIT;
@@ -392,11 +424,17 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		}
 	}
 	
+	/**
+	 * 
+	 */
 	protected void cancelExecutionAWT() {
 		timer.cancel();
 		currentPhase = Phase.INIT;
     }		
 	
+	/**
+	 * 
+	 */
 	public Property<?>[] getPropertyObjects() {
 		return new Property[] { Points.getMinPointsProperty(),
 				Points.getPointsProperty(), Points.getMaxPointsProperty(),
@@ -407,7 +445,9 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 				loadProperty, trialNoProperty };
 	}	
 	
-	
+	/**
+	 * 
+	 */
 	private void processProperties() {
 		endTime = System.nanoTime();
 		Timing.getEndTimeProperty().setValue(this, new Date());
@@ -453,7 +493,9 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		
 	}
 	
-	
+	/**
+	 * 
+	 */
 	private void endTask() {
 		currentPhase = Phase.INIT;
 		trialCounter++;
@@ -486,13 +528,21 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		}
 	}
 	
+	/**
+	 * 
+	 * @param reg
+	 */
 	private void refreshRegion(Region reg) {
 		regionsContainer.setRegionContentVisibility(reg, false);
 		recallReminderPanel.revalidate();
 		regionsContainer.setRegionContentVisibility(reg, true);
 	}
 	
-	
+	/**
+	 * 
+	 * @author James Stone
+	 *
+	 */
 	private class recallPanelHandler implements MouseListener {
 
 		public void mouseClicked(MouseEvent event) {
@@ -536,6 +586,9 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		
 	}
 	
+	/**
+	 * 
+	 */
 	private void refreshRecallPanel() {
 		recallPanel.removeAll();
 		
@@ -569,5 +622,113 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		recallPanel.revalidate();
 		refreshRegion(Region.CENTER);
 	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public ArrayList<Integer> generateSpanList() {
+		ArrayList<Integer> tmpList = new ArrayList<Integer>();
+		for (int j = 0; j < spanTwoTrials; j++) {
+			tmpList.add(2);
+		}
+		for (int j = 0; j < spanThreeTrials; j++) {
+			tmpList.add(3);
+		}
+		for (int j = 0; j < spanFourTrials; j++) {
+			tmpList.add(4);
+		}
+		for (int j = 0; j < spanFiveTrials; j++) {
+			tmpList.add(5);
+		}
+		for (int j = 0; j < spanSixTrials; j++) {
+			tmpList.add(6);
+		}
+		for (int j = 0; j < spanSevenTrials; j++) {
+			tmpList.add(7);
+		}
+		for (int j = 0; j < spanEightTrials; j++) {
+			tmpList.add(8);
+		}
+		for (int j = 0; j < spanNineTrials; j++) {
+			tmpList.add(9);
+		}
+		
+		return tmpList;
+	}	
+	
+	//get-set methods to allow the xml to pass values to the executable//
+	
+	public int getrandomisedTrials() {
+		return randomisedTrials;
+	}
+	
+	public void setrandomisedTrials(int n) {
+		this.randomisedTrials = n;
+	}
+	
+	public int getspanTwoTrials() {
+		return spanTwoTrials;
+	}
+	
+	public void setspanTwoTrials(int n) {
+		this.spanTwoTrials = n;
+	}
+	
+	public int getspanThreeTrials() {
+		return spanThreeTrials;
+	}
+	
+	public void setspanThreeTrials(int n) {
+		this.spanThreeTrials = n;
+	}
+	
+	public int getspanFourTrials() {
+		return spanFourTrials;
+	}
+	
+	public void setspanFourTrials(int n) {
+		this.spanFourTrials = n;
+	}
+	
+	public int getspanFiveTrials() {
+		return spanFiveTrials;
+	}
+	
+	public void setspanFiveTrials(int n) {
+		this.spanFiveTrials = n;
+	}
+	
+	public int getspanSixTrials() {
+		return spanSixTrials;
+	}
+	
+	public void setspanSixTrials(int n) {
+		this.spanSixTrials = n;
+	}
+	
+	public int getspanSevenTrials() {
+		return spanSevenTrials;
+	}
+	
+	public void setspanSevenTrials(int n) {
+		this.spanSevenTrials = n;
+	}
+	
+	public int getspanEightTrials() {
+		return spanEightTrials;
+	}
+	
+	public void setspanEightTrials(int n) {
+		this.spanEightTrials = n;
+	}
+	
+	public int getspanNineTrials() {
+		return spanNineTrials;
+	}
+	
+	public void setspanNineTrials(int n) {
+		this.spanNineTrials = n;
+	}	
 	
 }
