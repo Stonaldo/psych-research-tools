@@ -39,22 +39,25 @@ import ch.tatool.exec.ExecutionContext;
 import ch.tatool.exec.ExecutionOutcome;
 
 
-/**DIiplays a sentence in the center of the screen and collects a 
-*judgement from the participant based on whether the sentence 
-*makes sense or not
-*@author James Stone
-**/
+/**
+ * Displays a sentence in the centre of the screen and waits for 
+ * participants to make a judgement on whether it makes sense or 
+ * not.
+ * 
+ * @author James Stone
+ *
+ */
 
-public class sentence_processing_exec extends BlockingAWTExecutable implements
+public class SentenceProcessingTask extends BlockingAWTExecutable implements
 ActionPanelListener, DescriptivePropertyHolder {
 
-	Logger logger = LoggerFactory.getLogger(sentence_processing_exec.class);
+	Logger logger = LoggerFactory.getLogger(SentenceProcessingTask.class);
 	
 	//panels for display
 	private CenteredTextPanel sentencePanel;
 	private KeyActionPanel responsePanel;
 	
-	//stimuli variables
+	// variables // 
 	private String SentenceBankFileName;
 	private ArrayList<String> sentenceBank;
 	private ArrayList<String> answerBank;
@@ -65,30 +68,42 @@ ActionPanelListener, DescriptivePropertyHolder {
 	private long startTime;
 	private long endTime;
 	private Random rand;
-
 	private RegionsContainer regionsContainer;
 	final Font treb = new Font("Trebuchet MS", 1, 26);
 	final Color fontColor = new Color(0,51,102);
 	private String current_user;
 	
-	//constructor
-	public sentence_processing_exec() {
+	/**
+	 * Constructor for the sentence processing task.
+	 */
+	public SentenceProcessingTask() {
 		sentencePanel = new CenteredTextPanel();
 		responsePanel = new KeyActionPanel();
 		responsePanel.addActionPanelListener(this);
 		rand = new Random();
 	}
 	
+	/**
+	 * Method is called at the start of each execution
+	 */
 	protected void startExecutionAWT() {
 		ExecutionContext context = getExecutionContext();
 		SwingExecutionDisplay display = ExecutionDisplayUtils.getDisplay(context);
 		ContainerUtils.showRegionsContainer(display);
 		regionsContainer = ContainerUtils.getRegionsContainer();
 		
-		current_user = context.getExecutionData().getModule().getUserAccount().getName();
-		StatusPanel customNamePanel = (StatusPanel) StatusRegionUtil.getStatusPanel("custom1");
-		customNamePanel.setProperty("title","User");
-		customNamePanel.setProperty("value", current_user);
+		/**
+		 * Don't need to call this everytime, only the first time. Probably don't need it 
+		 * at all because this exec will only ever be used in tandem with a storage 
+		 * exec.
+		 */
+		if (itemno == 0) {
+			current_user = context.getExecutionData().getModule().getUserAccount().getName();
+			StatusPanel customNamePanel = (StatusPanel) StatusRegionUtil.getStatusPanel("custom1");
+			customNamePanel.setProperty("title","User");
+			customNamePanel.setProperty("value", current_user);			
+		}
+
 		
 		String thisTrialSentence = getSentence(); //call a method to get the sentence for this execution//
 		
@@ -110,13 +125,18 @@ ActionPanelListener, DescriptivePropertyHolder {
 		responsePanel.enableActionPanel(); 
 	}	
 	
+	/**
+	 * Collects a sentence to display for judgement.
+	 * If it is the first time called then it reads in the sentence bank 
+	 * from a file. 
+	 * @return String - The sentence to display.
+	 */
 	private String getSentence() {
 		if (itemno == 0) { //then this is first execution and we need to read in the sentences//
 			Scanner s;
 			sentenceBank = new ArrayList<String>();
 			answerBank = new ArrayList<String>();
 			
-			//s = new Scanner(new File("/stimuli/word_lists/" + SentenceBankFileName));
 			s = new Scanner(new InputStreamReader(this.getClass().getResourceAsStream("/stimuli/word_lists/" + SentenceBankFileName)));
 			s.useDelimiter("[,\n]");
 			while (s.hasNext()) {
@@ -144,6 +164,9 @@ ActionPanelListener, DescriptivePropertyHolder {
 		return toReturn;
 	}
 
+	/**
+	 * Processes the response of the user.
+	 */
 	public void actionTriggered(ActionPanel source, Object actionValue) {
 		responsePanel.disableActionPanel();
 		
@@ -160,6 +183,9 @@ ActionPanelListener, DescriptivePropertyHolder {
 		endTask();		
 	}
 
+	/**
+	 * Called to end the executable.
+	 */
 	private void endTask() {
 		regionsContainer.setRegionContentVisibility(Region.CENTER, false);
 		regionsContainer.setRegionContentVisibility(Region.SOUTH, false);
@@ -212,35 +238,26 @@ ActionPanelListener, DescriptivePropertyHolder {
 				Timing.getDurationTimeProperty(), Misc.getOutcomeProperty() };
 	}
 	
+	/**
+	 * 
+	 */
 	protected void cancelExecutionAWT() {
 		//timer.cancel();
     }	
 	
+	/**
+	 * 
+	 * @return
+	 */
 	public String getSentenceBankFileName() {
 		return SentenceBankFileName;
 	}
-	
+	/**
+	 * 
+	 * @param SentenceBankFileName
+	 */
 	public void setSentenceBankFileName(String SentenceBankFileName) {
 		this.SentenceBankFileName = SentenceBankFileName;
 	}
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
