@@ -51,7 +51,6 @@ public class RotationProcessingTask extends BlockingAWTExecutable implements
 	private KeyActionPanel actionPanel; //for displaying options and collecting responses//		
 	
 	//stimuli variables//
-	private int itemno = 0;
 	private boolean mirror; //should the letter be a mirror image or normal//
 	private int correctResponse;
 	private int givenResponse;
@@ -94,7 +93,9 @@ public class RotationProcessingTask extends BlockingAWTExecutable implements
 	
 	private RegionsContainer regionsContainer;
 	
-	//init constructor//
+	/**
+	 * Rotation Processing Task Constructor
+	 */
 	public RotationProcessingTask() {
 		actionPanel = new KeyActionPanel();
 		actionPanel.addActionPanelListener(this);
@@ -102,6 +103,9 @@ public class RotationProcessingTask extends BlockingAWTExecutable implements
 		rand = new Random();
 	}	
 
+	/**
+	 * Method called whenever this executable is launched. 
+	 */
 	protected void startExecutionAWT() {
 				
 		
@@ -127,6 +131,11 @@ public class RotationProcessingTask extends BlockingAWTExecutable implements
 		actionPanel.enableActionPanel(); 
 	}
 	
+	/**
+	 * this method sets all the variables we need for a trial, 
+	 * ranodmly selects if it should be a mirrored image or not, 
+	 * and then at what rotation it should be delivered. 
+	 */
 	private void generateTrial() {
 		//mirror image or not? //
 		mirror = rand.nextInt(2) == 1; // if true then a mirror image //
@@ -177,14 +186,19 @@ public class RotationProcessingTask extends BlockingAWTExecutable implements
 			thisTrialIcon = new RotatedIcon(tmpIcon, thisTrialRotation - 45);
 		else
 			thisTrialIcon = new RotatedIcon(tmpIcon, thisTrialRotation);
-		
-		itemno++;
 	}
 	
+	/**
+	 * add the selected icon to the image panel for display
+	 */
 	private void setImageToPanel() {
 		displayPanel.setIcon(thisTrialIcon);
 	}
 	
+	/**
+	 * method called when the action panel receives one of the inputs 
+	 * it is waiting for.
+	 */
 	public void actionTriggered(ActionPanel source, Object actionValue) {
 		actionPanel.disableActionPanel();
 		
@@ -201,6 +215,10 @@ public class RotationProcessingTask extends BlockingAWTExecutable implements
 		endTask();
 	}
 	
+	/**
+	 * method called after the repsonse is given, deals with logging information and moving 
+	 * on.
+	 */
 	private void endTask() {
 		regionsContainer.setRegionContentVisibility(Region.CENTER, false);
 		regionsContainer.setRegionContentVisibility(Region.SOUTH, false);
@@ -253,6 +271,9 @@ public class RotationProcessingTask extends BlockingAWTExecutable implements
 				Timing.getDurationTimeProperty(), Misc.getOutcomeProperty() };
 	}
 	
+	/**
+	 * 
+	 */
 	protected void cancelExecutionAWT() {
 		//timer.cancel();
     }

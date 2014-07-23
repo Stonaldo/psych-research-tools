@@ -9,6 +9,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -39,6 +40,8 @@ import ch.tatool.core.display.swing.container.RegionsContainer.Region;
 import ch.tatool.core.display.swing.panel.CenteredTextPanel;
 import ch.tatool.core.display.swing.status.StatusPanel;
 import ch.tatool.core.display.swing.status.StatusRegionUtil;
+import ch.tatool.core.element.ElementUtils;
+import ch.tatool.core.element.IteratedListSelector;
 import ch.tatool.core.element.handler.pause.PauseHandlerUtil;
 import ch.tatool.core.executable.BlockingAWTExecutable;
 import ch.tatool.data.DescriptivePropertyHolder;
@@ -112,6 +115,7 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 	private ImageIcon arrowLong45;
 	private ImageIcon arrowShort45;
 	private RotatedIcon thisTrialIcon;
+	private int ComplexSpan = 0;
 	
 	//variables//
 	private int trialCounter = 0;
@@ -126,6 +130,24 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 	final Font textFont = new Font("Source Code Pro", 1, 24);
 	private String current_user;
 	//private Color recallBG = new Color(253,249,249);
+	
+	//icon panels
+	private iconPanel long_0;
+	private iconPanel long_1;
+	private iconPanel long_2;
+	private iconPanel long_3;
+	private iconPanel long_4;
+	private iconPanel long_5;
+	private iconPanel long_6;
+	private iconPanel long_7;
+	private iconPanel short_0;
+	private iconPanel short_1;
+	private iconPanel short_2;
+	private iconPanel short_3;
+	private iconPanel short_4;
+	private iconPanel short_5;
+	private iconPanel short_6;
+	private iconPanel short_7;
 	
 	
 	/**
@@ -182,9 +204,6 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 			StatusPanel customNamePanel = (StatusPanel) StatusRegionUtil.getStatusPanel("custom1");
 			customNamePanel.setProperty("title","User");
 			customNamePanel.setProperty("value", current_user);		
-			
-			//compile ArrayList for spans//
-			spansList = generateSpanList();
 		}
 		
 		regionsContainer.setRegionContent(Region.SOUTH, recallReminderPanel);
@@ -285,6 +304,13 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 	 */
 	private void generateStimuli() {
 		
+		//if first trial then generate trial spans
+		if (trialCounter == 0) {
+			//compile ArrayList for spans//
+			spansList = generateSpanList();
+			setNumIterations();
+		}			
+		
 		//if not randomisedTrials then just take the first element in spansList //
 		//if randomisedTrials take random int from spans to use as list length in this trial, then remove that element from spans//
 		int thisTrialSpan = 99;
@@ -372,23 +398,27 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		recallPanel.setBackground(Color.WHITE);
 		recallPanel.setBorder(BorderFactory.createTitledBorder("Click the arrows in the order they were presented"));
 		
-		iconPanel long_0 = new iconPanel(arrowLong,degrees[0],100,100,false);
-		iconPanel long_1 = new iconPanel(arrowLong45,degrees[1]-45,100,100,true);
-		iconPanel long_2 = new iconPanel(arrowLong,degrees[2],100,100,false);
-		iconPanel long_3 = new iconPanel(arrowLong45,degrees[3]-45,100,100,true);
-		iconPanel long_4 = new iconPanel(arrowLong,degrees[4],100,100,false);
-		iconPanel long_5 = new iconPanel(arrowLong45,degrees[5]-45,100,100,true);
-		iconPanel long_6 = new iconPanel(arrowLong,degrees[6],100,100,false);
-		iconPanel long_7 = new iconPanel(arrowLong45,degrees[7]-45,100,100,true);
 		
-		iconPanel short_0 = new iconPanel(arrowShort,degrees[0],100,100,false);
-		iconPanel short_1 = new iconPanel(arrowShort45,degrees[1]-45,100,100,true);
-		iconPanel short_2 = new iconPanel(arrowShort,degrees[2],100,100,false);
-		iconPanel short_3 = new iconPanel(arrowShort45,degrees[3]-45,100,100,true);
-		iconPanel short_4 = new iconPanel(arrowShort,degrees[4],100,100,false);
-		iconPanel short_5 = new iconPanel(arrowShort45,degrees[5]-45,100,100,true);
-		iconPanel short_6 = new iconPanel(arrowShort,degrees[6],100,100,false);
-		iconPanel short_7 = new iconPanel(arrowShort45,degrees[7]-45,100,100,true);	
+		if (trialCounter == 0) {
+			long_0 = new iconPanel(arrowLong,degrees[0],100,100,false);
+			long_1 = new iconPanel(arrowLong45,degrees[1]-45,100,100,true);
+			long_2 = new iconPanel(arrowLong,degrees[2],100,100,false);
+			long_3 = new iconPanel(arrowLong45,degrees[3]-45,100,100,true);
+			long_4 = new iconPanel(arrowLong,degrees[4],100,100,false);
+			long_5 = new iconPanel(arrowLong45,degrees[5]-45,100,100,true);
+			long_6 = new iconPanel(arrowLong,degrees[6],100,100,false);
+			long_7 = new iconPanel(arrowLong45,degrees[7]-45,100,100,true);
+			
+			short_0 = new iconPanel(arrowShort,degrees[0],100,100,false);
+			short_1 = new iconPanel(arrowShort45,degrees[1]-45,100,100,true);
+			short_2 = new iconPanel(arrowShort,degrees[2],100,100,false);
+			short_3 = new iconPanel(arrowShort45,degrees[3]-45,100,100,true);
+			short_4 = new iconPanel(arrowShort,degrees[4],100,100,false);
+			short_5 = new iconPanel(arrowShort45,degrees[5]-45,100,100,true);
+			short_6 = new iconPanel(arrowShort,degrees[6],100,100,false);
+			short_7 = new iconPanel(arrowShort45,degrees[7]-45,100,100,true);				
+		}
+
 		
 		iPanelsLong = new ArrayList<iconPanel>();
 		iPanelsShort = new ArrayList<iconPanel>();
@@ -498,11 +528,20 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 	 */
 	private void endTask() {
 		currentPhase = Phase.INIT;
+		System.out.println("spansList: " + spansList);
 		trialCounter++;
 		
 		holderPanel.removeAll();
 		recallPanel.removeAll();
 		recallReminderPanel.removeAll();
+		
+		for (iconPanel t : iPanelsShort) {
+			t.removeMouseListener(recallPanelHandler);
+		}
+		
+		for (iconPanel t : iPanelsLong) {
+			t.removeMouseListener(recallPanelHandler);
+		}		
 		
 		if (getFinishExecutionLock()) {
 			finishExecution();
@@ -623,6 +662,35 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		refreshRegion(Region.CENTER);
 	}
 	
+	/*
+	 * the actual number of iterations is not the number of trials you want to run. Each iteration means every 
+	 * time this aprticularly executable should be called. In any one trial it is called more than once, it is 
+	 * called once for each memoranda display and once to run the recall phase for that trial. Therefore rather 
+	 * than have a user add this all up and set it in the XML where mistakes can be made, this method will take 
+	 * the span size trials asked for, calculate numIterations needed and reset the value. Only called at the 
+	 * start.
+	 */
+	public void setNumIterations() {
+		@SuppressWarnings("unchecked")
+		List<IteratedListSelector> ILSS = (List<IteratedListSelector>)(List<?>) ElementUtils.findHandlersInStackByType(getExecutionContext(), IteratedListSelector.class);
+		//how many iterations needed?
+		int iterationsRequired = 0;
+		
+		if (ComplexSpan == 0) {
+			//sum of spans list + size of spans list.
+			for (int i = 0; i < spansList.size(); i++) {
+				iterationsRequired += spansList.get(i);
+			}
+			iterationsRequired += spansList.size();		
+		} else if (ComplexSpan == 1) {
+			iterationsRequired = spansList.size();
+		}
+		
+		//set the value
+		System.out.println("iterationsRequired: " + iterationsRequired);
+		ILSS.get(0).setNumIterations(iterationsRequired);
+	}		
+	
 	/**
 	 * 
 	 * @return
@@ -658,6 +726,14 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 	}	
 	
 	//get-set methods to allow the xml to pass values to the executable//
+	
+	public int getComplexSpan() {
+		return ComplexSpan;
+	}
+	
+	public void setComplexSpan(int n) {
+		this.ComplexSpan = n;
+	}		
 	
 	public int getrandomisedTrials() {
 		return randomisedTrials;
