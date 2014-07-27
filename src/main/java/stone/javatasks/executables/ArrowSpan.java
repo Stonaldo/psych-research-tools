@@ -347,6 +347,8 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 				stimuliDegrees.add(degrees[tmpDegree]);
 			}			
 		}
+		
+		loadProperty.setValue(this, thisTrialSpan);
 
 	}
 	
@@ -494,7 +496,6 @@ public class ArrowSpan extends BlockingAWTExecutable implements DescriptivePrope
 		Question.getResponseProperty().setValue(this, givenResponse);
 		Question.setQuestionAnswer(this, String.valueOf(correctResponse), correctResponse);
 		boolean success = correctResponse.equals(givenResponse);
-		loadProperty.setValue(this, stimuliLengths.size());
 		
 		Points.setZeroOneMinMaxPoints(this);
 		Points.setZeroOnePoints(this, success);

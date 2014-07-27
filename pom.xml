@@ -63,7 +63,7 @@
 							<onejarVersion>0.97</onejarVersion>
 							<attachToBuild>true</attachToBuild>
 							<classifier>onejar</classifier>
-							<filename>CogTrain.jar</filename>
+							<filename>cog-tasks.jar</filename>
 						</configuration>
 						<goals>
 							<goal>one-jar</goal>
