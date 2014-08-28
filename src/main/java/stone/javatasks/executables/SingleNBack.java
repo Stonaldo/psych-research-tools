@@ -330,7 +330,7 @@ ExecutionPhaseListener, ActionPanelListener{
 		DefaultPointsAndLevelHandler thisPLH = (DefaultPointsAndLevelHandler) ElementUtils.findHandlerInStackByType(getExecutionContext(), DefaultPointsAndLevelHandler.class);
 		thisILS.setNumIterations(num);
 
-		thisPLH.setSampleSize(num * 2);
+		thisPLH.setSampleSize(num);
 		thisPLH.setTrialCounter(0);
 		double minThresh = ((((double)num * 2) - 9) / ((double)num * 2) * 100);
 		double maxThresh = ((((double)num * 2) - 5) / ((double)num * 2) * 100);
